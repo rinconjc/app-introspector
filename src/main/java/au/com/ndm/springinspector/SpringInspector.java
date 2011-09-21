@@ -1,6 +1,8 @@
 package au.com.ndm.springinspector;
 
 import au.com.ndm.common.MapBuilder;
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 import org.apache.log4j.Logger;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.PropertyValue;
@@ -32,6 +34,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.Method;
 import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -148,13 +151,23 @@ public class SpringInspector implements BeanFactoryAware{
             attrs.put(property.getName(), value==null?null : value.toString());
         }
 
+        List<MethodInfo> methods = new ArrayList<MethodInfo>();
+
+        try {
+            Class<?> aClass = Class.forName(beanDefinition.getBeanClassName());
+            for(Method method : aClass.getMethods())
+                methods.add(MethodInfo.create(method));
+        } catch (Exception e) {
+            LOGGER.error("Failed extracting methods of class", e);
+        }
+
         return new MapBuilder<String, Object>().add("class", beanDefinition.getBeanClassName())
                 .add("parent", beanDefinition.getParentName())
                 .add("scope", beanDefinition.getScope())
                 .add("properties", attrs)
+                .add("methods", methods)
                 .getMap();
     }
-
 
 }
 
@@ -206,4 +219,34 @@ class ScriptCommand{
             throw new Exception("Failed parsing command:" + e.getCause(), e);
         }
     }
+
+    static ScriptCommand fromScript(Reader reader){
+
+        return null;
+    }
+}
+
+class MethodInfo{
+    final String name;
+    final String[] paramTypes;
+    final String returnType;
+
+    MethodInfo(String name, String[] paramTypes, String returnType) {
+        this.name = name;
+        this.paramTypes = paramTypes;
+        this.returnType = returnType;
+    }
+
+    static MethodInfo create(Method method) {
+        List<String> paramTypes = new ArrayList<String>();
+
+        for(Class<?> clazz : method.getParameterTypes()){
+            paramTypes.add(clazz.getSimpleName());
+
+        }
+        Class<?> returnType = method.getReturnType();
+        return new MethodInfo(method.getName(), paramTypes.toArray(new String[0]), returnType==null?"void" :returnType.getSimpleName());
+    }
+
+
 }
