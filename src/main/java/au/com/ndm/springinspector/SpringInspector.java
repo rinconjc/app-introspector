@@ -1,21 +1,24 @@
 package au.com.ndm.springinspector;
 
 import au.com.ndm.common.MapBuilder;
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
 import org.apache.log4j.Logger;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.SerializationConfig;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.PropertyValue;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.json.MappingJacksonHttpMessageConverter;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.w3c.dom.Document;
@@ -24,18 +27,21 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
+import javax.annotation.PostConstruct;
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
@@ -55,6 +61,7 @@ public class SpringInspector implements BeanFactoryAware{
     private final static HttpHeaders JSON_HEADERS = new HttpHeaders(){{this.setContentType(MediaType.APPLICATION_JSON);}};
     private final static ScriptEngineManager scriptEngineManager = new ScriptEngineManager();
     private final static ScriptEngine jsEngine = scriptEngineManager.getEngineByExtension("js");
+    private ObjectMapper jsonMapper;
 
     static {
         try {
@@ -79,36 +86,54 @@ public class SpringInspector implements BeanFactoryAware{
 
     }
 
+    @PostConstruct
+    public void postConstruct(){
+        jsonMapper = new ObjectMapper();
+        jsonMapper.configure(SerializationConfig.Feature.FAIL_ON_EMPTY_BEANS, false);
+    }
+
     @RequestMapping(value = "/spring/beanNames", method = GET)
-    public ResponseEntity<List<String>> getBeanNames(){
-        return jsonEntity(getContextBeanNames(beanFactory));
+    public void getBeanNames(HttpServletResponse response){
+        writeJson(getContextBeanNames(beanFactory), response);
     }
 
     @RequestMapping(value = "/spring/bean", method = GET)
-    public ResponseEntity<Object> getBeanDetails(@RequestParam("id") String beanId){
+    public void getBeanDetails(HttpServletResponse response, @RequestParam("id") String beanId){
         BeanDefinition beanDefinition = getBeanDefinition(beanFactory, beanId);
-        return jsonEntity((Object)getBeanInfo(beanDefinition));
+        writeJson(getBeanInfo(beanDefinition), response);
     }
 
-    @RequestMapping(value = "/spring/run", method = POST)
-    public ResponseEntity<?> execScript(Reader reader){
+    @RequestMapping(value = "/spring/run", method = POST, params = "src=xml")
+    public void execScript(HttpServletResponse response, Reader reader){
         try {
             ScriptCommand scriptCommand = ScriptCommand.fromXml(reader);
-            return executeCommand(scriptCommand);
+            executeCommand(scriptCommand, response);
         } catch (Exception e) {
             LOGGER.error("Failed parsing script command", e);
-            return jsonEntity("Failed executing script:" + e.getMessage());
+            writeJson("Failed executing script:" + e.getMessage(), response);
         }
     }
 
-    private ResponseEntity<?> executeCommand(ScriptCommand command) throws Exception{
+    @RequestMapping(value = "/spring/run", method = POST)
+    public void execScript(HttpServletResponse response, @RequestBody String script){
+        try {
+            ScriptCommand scriptCommand = ScriptCommand.fromScript(script);
+            executeCommand(scriptCommand, response);
+        } catch (Exception e) {
+            LOGGER.error("Failed parsing script command", e);
+            writeJson("Failed executing script:" + e.getMessage(), response);
+        }
+    }
+
+
+    private void executeCommand(ScriptCommand command, HttpServletResponse response) throws Exception{
         Bindings bindings = jsEngine.createBindings();
         for (Map.Entry<String, String> entry : command.getArguments().entrySet()) {
             bindings.put(entry.getKey(), beanFactory.getBean(entry.getValue()));
         }
 
         try {
-            return jsonEntity(jsEngine.eval(command.getScript(), bindings));
+            writeJson(jsEngine.eval(command.getScript(), bindings), response);
         } catch (ScriptException e) {
             LOGGER.error("Failed executing script:" + command ,e );
             throw new Exception(e);
@@ -118,6 +143,18 @@ public class SpringInspector implements BeanFactoryAware{
     private <T> ResponseEntity<T> jsonEntity(T t){
         return new ResponseEntity<T>(t, JSON_HEADERS, HttpStatus.OK);
     }
+
+    private <T> void writeJson(T t,HttpServletResponse response){
+        response.setContentType(MediaType.APPLICATION_JSON.toString());
+        response.setStatus(HttpStatus.OK.value());
+        try {
+            jsonMapper.writeValue(response.getWriter(), t);
+            response.flushBuffer();
+        } catch (IOException e) {
+            LOGGER.error("Failed serialising object " +t, e);
+        }
+    }
+
 
     private List<String> getContextBeanNames(ListableBeanFactory factory){
         List<String> beanNames= new ArrayList<String>();
@@ -172,81 +209,3 @@ public class SpringInspector implements BeanFactoryAware{
 }
 
 
-class ScriptCommand{
-    private final static Logger LOGGER = Logger.getLogger(ScriptCommand.class);
-
-    private Map<String, String> arguments;
-    private String script;
-
-    ScriptCommand(Map<String, String> arguments, String script) {
-        this.arguments = arguments;
-        this.script = script;
-    }
-
-    @Override
-    public String toString() {
-        return "ScriptCommand{" +
-                "arguments=" + arguments +
-                ", script='" + script + '\'' +
-                '}';
-    }
-
-    public Map<String, String> getArguments() {
-        return arguments;
-    }
-
-    public String getScript() {
-        return script;
-    }
-
-    static ScriptCommand fromXml(Reader reader) throws Exception{
-        XPath xpath = XPathFactory.newInstance().newXPath();
-        try {
-            Document xml = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new InputSource(reader));
-
-            Map<String, String> args = new HashMap<String, String>();
-            //parse params
-            NodeList nodes = (NodeList) xpath.evaluate("/command/vars/var", xml, XPathConstants.NODESET);
-            for(int i=0; i<nodes.getLength(); i++){
-                NamedNodeMap attrs = nodes.item(i).getAttributes();
-                args.put(attrs.getNamedItem("name").getNodeValue(), attrs.getNamedItem("value").getNodeValue());
-            }
-            //parse script
-            Node node = (Node)xpath.evaluate("/command/script", xml, XPathConstants.NODE);
-
-            return new ScriptCommand(args, node.getTextContent());
-        } catch (Exception e) {
-            throw new Exception("Failed parsing command:" + e.getCause(), e);
-        }
-    }
-
-    static ScriptCommand fromScript(Reader reader){
-
-        return null;
-    }
-}
-
-class MethodInfo{
-    final String name;
-    final String[] paramTypes;
-    final String returnType;
-
-    MethodInfo(String name, String[] paramTypes, String returnType) {
-        this.name = name;
-        this.paramTypes = paramTypes;
-        this.returnType = returnType;
-    }
-
-    static MethodInfo create(Method method) {
-        List<String> paramTypes = new ArrayList<String>();
-
-        for(Class<?> clazz : method.getParameterTypes()){
-            paramTypes.add(clazz.getSimpleName());
-
-        }
-        Class<?> returnType = method.getReturnType();
-        return new MethodInfo(method.getName(), paramTypes.toArray(new String[0]), returnType==null?"void" :returnType.getSimpleName());
-    }
-
-
-}
