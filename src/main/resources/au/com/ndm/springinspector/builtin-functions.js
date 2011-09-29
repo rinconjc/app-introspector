@@ -4,7 +4,7 @@ importPackage(java.util);
 function toMap(obj){
     var hm = new HashMap()
     for(k in obj){
-        hm.put(k, asJson(obj[k]));
+        hm.put(k, toJava(obj[k]));
     }
     return hm;
 }
@@ -14,14 +14,16 @@ function toMap(obj){
 function toArray(arr){
     var list = new ArrayList(arr.length);
     for(i in arr)
-        list.add(asJson(arr[i]));
+        list.add(toJava(arr[i]));
     return list;
 }
 
 //converts a json object into the equivalent java object
-function asJson(obj){
+function toJava(obj){
     if(obj instanceof Array){
         return toArray(obj);
+    } else if(obj instanceof java.lang.Object){
+        return obj;
     } else if(typeof obj == "object"){
         return toMap(obj);
     } else{
@@ -33,7 +35,7 @@ function asJson(obj){
 
 //register functions below
 
-var functions = asJson({"asJson":asJson});
+var functions = toJava({"toJava":toJava});
 
 //return
 functions

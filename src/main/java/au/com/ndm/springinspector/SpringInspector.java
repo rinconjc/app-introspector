@@ -1,7 +1,8 @@
 package au.com.ndm.springinspector;
 
 import au.com.ndm.common.MapBuilder;
-import org.apache.log4j.Logger;
+import au.com.ndm.common.collections.ListUtils;
+import com.google.common.base.Function;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.springframework.beans.BeansException;
@@ -9,23 +10,17 @@ import org.springframework.beans.PropertyValue;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.ListableBeanFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.json.MappingJacksonHttpMessageConverter;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 
 import javax.annotation.PostConstruct;
 import javax.script.Bindings;
@@ -33,15 +28,11 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
@@ -77,6 +68,12 @@ public class SpringInspector implements BeanFactoryAware{
 
     private DefaultListableBeanFactory beanFactory;
 
+    @Value("${spring.inspector.beanwhitelist}")
+    private String[] beanWhitelist;
+
+    @Value("${spring.inspector.beanblacklist}")
+    private String[] beanBlacklist;
+
     @Override
     public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
         if(beanFactory instanceof DefaultListableBeanFactory)
@@ -99,8 +96,11 @@ public class SpringInspector implements BeanFactoryAware{
 
     @RequestMapping(value = "/spring/bean", method = GET)
     public void getBeanDetails(HttpServletResponse response, @RequestParam("id") String beanId){
-        BeanDefinition beanDefinition = getBeanDefinition(beanFactory, beanId);
-        writeJson(getBeanInfo(beanDefinition), response);
+        if(isBeanAllowed(beanId)){
+            BeanDefinition beanDefinition = getBeanDefinition(beanFactory, beanId);
+            writeJson(getBeanInfo(beanDefinition), response);
+        }else
+            writeJson("Bean inspection not allowed", response);
     }
 
     @RequestMapping(value = "/spring/run", method = POST, params = "src=xml")
@@ -129,6 +129,8 @@ public class SpringInspector implements BeanFactoryAware{
     private void executeCommand(ScriptCommand command, HttpServletResponse response) throws Exception{
         Bindings bindings = jsEngine.createBindings();
         for (Map.Entry<String, String> entry : command.getArguments().entrySet()) {
+            if(!isBeanAllowed(entry.getValue()))
+                throw new Exception("Bean '" + entry.getValue() +"' is not allowed.");
             bindings.put(entry.getKey(), beanFactory.getBean(entry.getValue()));
         }
 
@@ -164,7 +166,23 @@ public class SpringInspector implements BeanFactoryAware{
             if(listableBeanFactory.getParentBeanFactory()!=null)
                 beanNames.addAll(getContextBeanNames((ListableBeanFactory)listableBeanFactory.getParentBeanFactory()));
         }
-        return beanNames;
+        //apply blacklist/whitelist filtering
+        return ListUtils.filter(beanNames, new Function<String, Boolean>() {
+            public Boolean apply(String name) {
+                return isBeanAllowed(name);
+            }
+        });
+    }
+
+    private Boolean isBeanAllowed(String name) {
+        return (beanWhitelist==null || beanWhitelist.length==0 || matches(beanWhitelist, name))
+                && (beanBlacklist==null || beanBlacklist.length==0 || !matches(beanBlacklist,name));
+    }
+
+    private Boolean matches(String[] patterns, String name){
+        for(String pattern: patterns)
+            if(name.matches(pattern)) return true;
+        return false;
     }
 
     private BeanDefinition getBeanDefinition(BeanFactory factory, String beanId){
