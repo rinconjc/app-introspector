@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
  * User: rinconj
  * Date: 9/22/11 11:04 AM
  */
-class ScriptCommand{
+public class ScriptCommand{
     private final static Logger LOGGER = Logger.getLogger(ScriptCommand.class);
 
     private Map<String, String> arguments;

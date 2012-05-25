@@ -27,10 +27,9 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -45,6 +44,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
  * To change this template use File | Settings | File Templates.
  */
 @Controller
+@RequestMapping("/spring/*")
 public class SpringInspector implements BeanFactoryAware{
     private final static org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(SpringInspector.class);
 
@@ -52,6 +52,7 @@ public class SpringInspector implements BeanFactoryAware{
     private final static HttpHeaders JSON_HEADERS = new HttpHeaders(){{this.setContentType(MediaType.APPLICATION_JSON);}};
     private final static ScriptEngineManager scriptEngineManager = new ScriptEngineManager();
     private final static ScriptEngine jsEngine = scriptEngineManager.getEngineByExtension("js");
+    private static final String RES_PREFIX = "/resource/";
     private ObjectMapper jsonMapper;
 
     static {
@@ -89,24 +90,35 @@ public class SpringInspector implements BeanFactoryAware{
         jsonMapper.configure(SerializationConfig.Feature.FAIL_ON_EMPTY_BEANS, false);
     }
 
-    @RequestMapping(value = "/spring/beanNames", method = GET)
-    public void getBeanNames(HttpServletResponse response){
+    public void ping(HttpServletResponse response){
+
+    }
+
+    @RequestMapping(value = "/beanNames", method = GET)
+    public void getBeanNames(HttpServletRequest request, HttpServletResponse response){
+        LOGGER.info("beanNames request from " + request.getRemoteHost() + " by " + request.getRemoteUser());
         writeJson(getContextBeanNames(beanFactory), response);
     }
 
-    @RequestMapping(value = "/spring/bean", method = GET)
-    public void getBeanDetails(HttpServletResponse response, @RequestParam("id") String beanId){
+    @RequestMapping(value = "/bean", method = GET)
+    public void getBeanDetails(HttpServletRequest request, HttpServletResponse response, @RequestParam("id") String beanId
+            , @RequestParam(value = "im", required = false, defaultValue = "false") boolean includeMethods){
+
+        LOGGER.info("bean details for " + beanId + " request from " + request.getRemoteHost() + " by " + request.getRemoteUser());
+
         if(isBeanAllowed(beanId)){
             BeanDefinition beanDefinition = getBeanDefinition(beanFactory, beanId);
-            writeJson(getBeanInfo(beanDefinition), response);
+            writeJson(getBeanInfo(beanDefinition, includeMethods), response);
         }else
             writeJson("Bean inspection not allowed", response);
     }
 
-    @RequestMapping(value = "/spring/run", method = POST, params = "src=xml")
-    public void execScript(HttpServletResponse response, Reader reader){
+    @RequestMapping(value = "/run", method = POST, params = "src=xml")
+    public void execScript(HttpServletRequest request, HttpServletResponse response, Reader reader){
+
         try {
             ScriptCommand scriptCommand = ScriptCommand.fromXml(reader);
+            LOGGER.info("script run request from " + request.getRemoteHost() + " by " + request.getRemoteUser() + " cmd: " + scriptCommand);
             executeCommand(scriptCommand, response);
         } catch (Exception e) {
             LOGGER.error("Failed parsing script command", e);
@@ -114,14 +126,53 @@ public class SpringInspector implements BeanFactoryAware{
         }
     }
 
-    @RequestMapping(value = "/spring/run", method = POST)
-    public void execScript(HttpServletResponse response, @RequestBody String script){
+    @RequestMapping(value = "/run", method = POST)
+    public void execScript(HttpServletRequest request, HttpServletResponse response, @RequestBody String script){
         try {
             ScriptCommand scriptCommand = ScriptCommand.fromScript(script);
+            LOGGER.info("script run request from " + request.getRemoteHost() + " by " + request.getRemoteUser() + " cmd: " + scriptCommand);
             executeCommand(scriptCommand, response);
         } catch (Exception e) {
             LOGGER.error("Failed parsing script command", e);
             writeJson("Failed executing script:" + e.getMessage(), response);
+        }
+    }
+
+    @RequestMapping(value = "/console")
+    public void showConsole(HttpServletRequest request, HttpServletResponse response){
+        try {
+            InputStream resourceAsStream = getClass().getResourceAsStream("/inspector-form.html");
+            transfer(resourceAsStream, response.getOutputStream());
+            response.flushBuffer();
+        } catch (IOException e) {
+            LOGGER.error("Failed returning resource data", e);
+            response.setStatus(500);
+        }
+    }
+
+    @RequestMapping(value = "/resource/**")
+    public void getStaticResource(HttpServletRequest request, HttpServletResponse response){
+        String servletPath = request.getServletPath();
+        String resource = (servletPath.startsWith(RES_PREFIX)? servletPath.substring(RES_PREFIX.length()-1):servletPath);
+        try {
+            response.setDateHeader("Expires", System.currentTimeMillis()+3600000L);
+            response.setHeader("Cache-Control","public");
+            InputStream resourceAsStream = getClass().getResourceAsStream(resource);
+            transfer(resourceAsStream, response.getOutputStream());
+            response.flushBuffer();
+        } catch (IOException e) {
+            LOGGER.error("Failed returning resource data", e);
+            response.setDateHeader("Expires", 0);
+            response.setHeader("Cache-Control","no-cache");
+            response.setStatus(500);
+        }
+    }
+
+    private void transfer(InputStream in, OutputStream out) throws IOException {
+        byte[] buffer = new byte[1024];
+        int len = 0;
+        while ((len=in.read(buffer))>=0){
+            out.write(buffer, 0, len);
         }
     }
 
@@ -197,7 +248,7 @@ public class SpringInspector implements BeanFactoryAware{
         return null;
     }
 
-    private Map<String, Object> getBeanInfo(BeanDefinition beanDefinition){
+    private Map<String, Object> getBeanInfo(BeanDefinition beanDefinition, boolean includeMethods){
         if(beanDefinition==null) return null;
         Map<String, String> attrs = new HashMap<String, String>();
 
@@ -206,22 +257,26 @@ public class SpringInspector implements BeanFactoryAware{
             attrs.put(property.getName(), value==null?null : value.toString());
         }
 
-        List<MethodInfo> methods = new ArrayList<MethodInfo>();
-
-        try {
-            Class<?> aClass = Class.forName(beanDefinition.getBeanClassName());
-            for(Method method : aClass.getMethods())
-                methods.add(MethodInfo.create(method));
-        } catch (Exception e) {
-            LOGGER.error("Failed extracting methods of class", e);
-        }
-
-        return new MapBuilder<String, Object>().add("class", beanDefinition.getBeanClassName())
+        Map<String, Object> map = new MapBuilder<String, Object>().add("class", beanDefinition.getBeanClassName())
                 .add("parent", beanDefinition.getParentName())
                 .add("scope", beanDefinition.getScope())
-                .add("properties", attrs)
-                .add("methods", methods)
-                .getMap();
+                .add("properties", attrs).getMap();
+
+        if(includeMethods){
+            List<MethodInfo> methods = new ArrayList<MethodInfo>();
+
+            try {
+                Class<?> aClass = Class.forName(beanDefinition.getBeanClassName());
+                for(Method method : aClass.getMethods())
+                    methods.add(MethodInfo.create(method));
+            } catch (Exception e) {
+                LOGGER.error("Failed extracting methods of class", e);
+            }
+            map.put("methods", methods);
+        }
+
+        return map;
+
     }
 
 }
