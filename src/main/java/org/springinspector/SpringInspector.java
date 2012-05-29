@@ -12,6 +12,7 @@ import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -52,7 +53,7 @@ public class SpringInspector implements BeanFactoryAware{
     private final static HttpHeaders JSON_HEADERS = new HttpHeaders(){{this.setContentType(MediaType.APPLICATION_JSON);}};
     private final static ScriptEngineManager scriptEngineManager = new ScriptEngineManager();
     private final static ScriptEngine jsEngine = scriptEngineManager.getEngineByExtension("js");
-    private static final String RES_PREFIX = "/resource/";
+    private static final String RES_PREFIX = "/spring/resource/";
     private ObjectMapper jsonMapper;
 
     static {
@@ -261,9 +262,9 @@ public class SpringInspector implements BeanFactoryAware{
 
         for (PropertyValue property: beanDefinition.getPropertyValues().getPropertyValues()) {
             Object value = property.getValue();
-            if(value instanceof BeanDefinition){
-                BeanDefinition beanDef = ((BeanDefinition) value);
-                value = beanDef.getBeanClassName()!=null?beanDef.getBeanClassName() : beanDef.getParentName();
+            if(value instanceof BeanDefinitionHolder){
+                BeanDefinitionHolder beanDef = ((BeanDefinitionHolder) value);
+                value = beanDef.getBeanName()!=null?"ref " + beanDef.getBeanName() : beanDef.getBeanDefinition().getBeanClassName();
             }
             attrs.put(property.getName(), value==null?null : value.toString());
         }
