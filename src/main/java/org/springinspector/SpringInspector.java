@@ -1,8 +1,9 @@
 package org.springinspector;
 
-import au.com.ndm.common.MapBuilder;
-import au.com.ndm.common.collections.ListUtils;
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Maps;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.springframework.beans.BeansException;
@@ -216,7 +217,7 @@ public class SpringInspector implements BeanFactoryAware{
     }
 
 
-    private List<String> getContextBeanNames(ListableBeanFactory factory){
+    private Collection<String> getContextBeanNames(ListableBeanFactory factory){
         List<String> beanNames= new ArrayList<String>();
         beanNames.addAll(Arrays.asList(factory.getBeanDefinitionNames()));
         if(factory instanceof DefaultListableBeanFactory){
@@ -226,9 +227,10 @@ public class SpringInspector implements BeanFactoryAware{
         }
         Collections.sort(beanNames);
         //apply blacklist/whitelist filtering
-        return ListUtils.filter(beanNames, new Function<String, Boolean>() {
-            public Boolean apply(String name) {
-                return isBeanAllowed(name);
+        return Collections2.filter(beanNames, new Predicate<String>() {
+            @Override
+            public boolean apply(String input) {
+                return isBeanAllowed(input);
             }
         });
     }
@@ -274,10 +276,11 @@ public class SpringInspector implements BeanFactoryAware{
             beanClass = getBeanDefinition(beanFactory, beanClass.getParentName());
         }
 
-        Map<String, Object> map = new MapBuilder<String, Object>().add("class", beanClass.getBeanClassName())
-                .add("parent", beanDefinition.getParentName())
-                .add("scope", beanDefinition.getScope())
-                .add("properties", attrs).getMap();
+        Map<String, Object> map = new HashMap<String, Object>();
+        map.put("class", beanClass.getBeanClassName());
+        map.put("parent", beanDefinition.getParentName());
+        map.put("scope", beanDefinition.getScope());
+        map.put("properties", attrs);
 
         if(includeMethods){
             List<MethodInfo> methods = new ArrayList<MethodInfo>();
