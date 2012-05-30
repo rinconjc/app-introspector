@@ -54,7 +54,7 @@ Adding Spring Inspector to your application
 1. Add the following dependency to your maven pom.xml (if not using maven include the jar file directly in your project classpath)
 
 		<dependency>
-		  <groupId>au.com.ndm</groupId>
+		  <groupId>org.spring-inspector</groupId>
 		  <artifactId>spring-inspector</artifactId>
 		  <version>1.1-SNAPSHOT</version>
 		</dependency>	
@@ -71,7 +71,7 @@ Adding Spring Inspector to your application
 		    <security:intercept-url pattern="/spring/run" access="ROLE_MASTER" />
 		    <security:intercept-url pattern="/spring/*" access="ROLE_SUPER" />
 		</security:http>
-		
+
 
 
 
