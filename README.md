@@ -54,7 +54,7 @@ Adding Spring Inspector to your application
 1. Add the following dependency to your maven pom.xml (if not using maven include the jar file directly in your project classpath)
 
 		<dependency>
-		  <groupId>org.spring-inspector</groupId>
+		  <groupId>com.github.julior</groupId>
 		  <artifactId>spring-inspector</artifactId>
 		  <version>1.1-SNAPSHOT</version>
 		</dependency>	
