@@ -1,7 +1,7 @@
 Spring Inspector
 ================
 
-A small plugable library for Spring based web applications that provides programatic access to the application at runtime. This can be used to diagnostic or fix problems at runtime. It provides a simple REST like JSON interface, as well as a rich user interface console for inspecting and executing scripts (JavaScript) on JVM running the application.
+A small plugable library for Spring based web applications that provides programatic access to the application at runtime. This can be used to diagnostic or fix problems at runtime. It provides a simple REST like JSON interface, as well as a rich web console for inspecting and executing scripts (JavaScript) in the JVM running the application.
 
 
 JSON Interface endpoints:
