@@ -29,21 +29,21 @@ This returns the properties and methods of the specified bean. e.g.
 This executes the script sent as a text/plain payload in the request. Only javascript is supported at the moment. The script can contain references to spring beans using ${} and the bean id, e.g.
 
 		${messageListener}.stop();
-
+* A web console can be accessed at: `/spring/console` . See [Spring Inspector Console](https://github.com/julior/spring-inspector/wiki/Spring-inspector-Console)) for more details.
 
 Additionally, the script can invoke the following built-in functions:	 
 
-* `toJava(<a javascript object>)`: Converts javascript literals to Java .e.g
+ * `toJava(<a javascript object>)`: Converts javascript literals to Java .e.g
 
 		//return some data to client
 		toJava({status:${messageLister}.getStatus, mailbox: ${messageListener}.getMailboxSize()});
 
-* `exec(<some OS command>)`: Executes the given command as separate process in the operating system. e.g.
+ * `exec(<some OS command>)`: Executes the given command as separate process in the operating system. e.g.
 
 		//get memory usage
 		exec("free -m");
 
-* `getField(<object instance>, <field name>)` : Uses reflexion to access the given field in the given object instance. e.g
+ * `getField(<object instance>, <field name>)` : Uses reflexion to access the given field in the given object instance. e.g
 
 		//check a private field
 		getField(${messageListener}, 'retryCount')
