@@ -69,10 +69,10 @@ public class SpringInspector implements BeanFactoryAware{
 
     private DefaultListableBeanFactory beanFactory;
 
-    @Value("${spring.inspector.beanwhitelist}")
+    @Value("${spring.inspector.beanwhitelist:}")
     private String[] beanWhitelist;
 
-    @Value("${spring.inspector.beanblacklist}")
+    @Value("${spring.inspector.beanblacklist:}")
     private String[] beanBlacklist;
 
     @Override
@@ -88,10 +88,6 @@ public class SpringInspector implements BeanFactoryAware{
     public void postConstruct(){
         jsonMapper = new ObjectMapper();
         jsonMapper.configure(SerializationConfig.Feature.FAIL_ON_EMPTY_BEANS, false);
-    }
-
-    public void ping(HttpServletResponse response){
-
     }
 
     @RequestMapping(value = "/beanNames", method = GET)

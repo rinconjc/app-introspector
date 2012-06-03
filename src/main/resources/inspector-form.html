@@ -91,7 +91,7 @@
 
   function loadScript(scriptId){
     var stored = JSON.parse(localStorage.getItem('STORED_SCRIPTS'));
-    $('#scriptArea').text(stored[scriptId]);
+    $('#scriptArea').val(stored[scriptId]);
   }
 
   $(document).ready(function() {
