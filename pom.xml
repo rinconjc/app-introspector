@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>7</version>
+    </parent>
+
     <groupId>com.github.julior</groupId>
     <artifactId>spring-inspector</artifactId>
     <version>1.1-SNAPSHOT</version>
@@ -19,8 +25,10 @@
         </license>
     </licenses>
     <scm>
-        <url>https://github.com/julior/spring-inspector</url>
+        <url>git@github.com:julior/spring-inspector.git</url>
+        <!--https://julior@github.com/julior/spring-inspector.git-->
         <connection>scm:git:git://github.com:julior/spring-inspector.git</connection>
+        <developerConnection>scm:git:git://github.com:julior/spring-inspector.git</developerConnection>
     </scm>
     <developers>
         <developer>
