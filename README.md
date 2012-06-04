@@ -61,7 +61,7 @@ Adding Spring Inspector to your application
 
 2. Enable component scan in your Spring application context
 
-		<context:component-scan base-package="org.springinspector" use-default-filters="false" >
+		<context:component-scan base-package="com.github.julior.springinspector" use-default-filters="false" >
 			<context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
 		</context:component-scan>
 
