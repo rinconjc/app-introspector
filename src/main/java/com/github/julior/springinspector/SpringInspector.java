@@ -59,7 +59,9 @@ public class SpringInspector implements BeanFactoryAware{
         try {
             Bindings globalScope = scriptEngineManager.getBindings();
             InputStreamReader reader = new InputStreamReader(SpringInspector.class.getResourceAsStream("/com/github/julior/springinspector/builtin-functions.js"));
+            //globalScope.put("timer",new Timer());
             globalScope.putAll((Map<String, Object>)jsEngine.eval(reader));
+            globalScope.put("_globalScope", globalScope);
             scriptEngineManager.setBindings(globalScope);
         } catch (Exception e) {
             LOGGER.error("Failed registering built-in functions", e);

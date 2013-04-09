@@ -57,9 +57,81 @@ function exec(cmd){
     return resp.toString();
 }
 
+/*
+* Executes a DB query in a DB.
+*/
+function dbquery(ds, sql, maxrows){
+    var _maxrows = typeof maxrows == 'undefined'?100:maxrows;     
+    var con = ds.getConnection()
+    var resp = new StringBuilder();
+    try{
+        var rs = con.createStatement().executeQuery(sql);
+        var meta = rs.getMetaData();
+        for(var i=1;i<=meta.getColumnCount(); i++){            
+            resp.append(i+"|").append(meta.getColumnLabel(i)).append("\t")
+        }
+        resp.append("\n")
+        var count = 0;
+        while(count < _maxrows && rs.next()){
+            count++;
+            for(var i=1;i<=meta.getColumnCount(); i++){
+                var value = rs.getObject(i)
+                resp.append(i+"|").append(value==null?"null": value).append('\t')
+            }
+            resp.append("\n");
+        }
+        if(rs.next()){
+            resp.append("Results truncated to ").append(maxrows).append(" rows \n");
+        }
+    }catch(e){
+        resp.append("error:" + e);
+    }finally{
+        con.close();
+    }
+    return resp.toString();
+}
+
+
+/*
+* Executes an update command in a DB
+*/
+function dbupdate(ds,sql){
+    var con = ds.getConnection()
+    try{
+        return con.createStatement().executeUpdate(sql);
+    }catch(e){
+        return "Error:" + e;
+    }finally{
+        con.close();
+    }
+}
+
+/*
+* Creates a new runnable instance from the given function
+*/
+function toRunnable(fun){
+    return new java.lang.Runnable({
+    run: function(){
+        fun();
+    }
+    });
+}
+
+function toTimerTask(fun){
+    return new com.github.julior.springinspector.RunnableTimerTask(toRunnable(fun));
+}
+
+/*
+* define variable or object in scope
+*/
+function define(name, func){
+    globalScope.put(name, func);
+}
+
 //register functions below
 
-var functions = toJava({"toJava":toJava, "getField":getField, "exec":exec});
+var functions = toJava({"toJava":toJava, "getField":getField, "exec":exec, "dbquery":dbquery, "dbupdate":dbupdate
+, "toRunnable":toRunnable, "toTimerTask":toTimerTask});
 
 //return
 functions
