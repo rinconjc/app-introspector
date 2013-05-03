@@ -72,18 +72,32 @@ public class ScriptCommand{
     }
 
     public static ScriptCommand fromScript(String script) throws Exception{
-
-        Pattern beanRefPattern = Pattern.compile("\\$\\{?([^\\s\\;}]+)\\}?");
         Map<String, String> args = new HashMap<String, String>();
-        Matcher matcher = beanRefPattern.matcher(script);
+        Pattern multiLineStringsPattern = Pattern.compile("(?m)('''((.|\\r|\\n)+(.|\\r|\\n)(?=(''')))''')");
+        Matcher matcher = multiLineStringsPattern.matcher(script);
+        //convert multilines strings into single lines
         StringBuffer buffer = new StringBuffer();
+        while (matcher.find()){
+            String strConst = matcher.group(2).replace("\n", "\\\\n").replace("\"", "\\\\\"");
+            matcher.appendReplacement(buffer, "\"" + strConst + "\"");
+        }
+        matcher.appendTail(buffer);
+        //LOGGER.debug("after string linearised :" + buffer.toString());
+
+        Pattern beanRefPattern = Pattern.compile("(\"[^\"]*\")|(\\$\\{?([^\\s;}]+)\\}?)");
+
+        //replace bean references with variables (excluding references within strings)
+        matcher = beanRefPattern.matcher(buffer.toString());
+        buffer = new StringBuffer();
         int i=0;
         while (matcher.find()){
-            i++;
-            String beanId = matcher.group(1);
-            String varName = genVarName(i);
-            matcher.appendReplacement(buffer, varName);
-            args.put(varName, beanId);
+            if(matcher.group(2)!=null){
+                i++;
+                String beanId = matcher.group(3);
+                String varName = genVarName(i);
+                matcher.appendReplacement(buffer, varName);
+                args.put(varName, beanId);
+            }
         }
         matcher.appendTail(buffer);
 
