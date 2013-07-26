@@ -72,22 +72,36 @@ public class ScriptCommand{
     }
 
     public static ScriptCommand fromScript(String script) throws Exception{
+        String multiSep = "'''";
+        StringBuffer buffer = new StringBuffer(script);
+        int first = -1;
+        //convert multilines strings into single lines
+        while((first = buffer.indexOf(multiSep, first+1)) >=0){
+            int second = buffer.indexOf(multiSep, first + multiSep.length());
+            if(second>=0){
+                String replacement = "\"" + buffer.substring(first + multiSep.length(), second).replace("\r\n", "\\n").replace("\n", "\\n").replace("\"", "\\\"") + "\"";
+                buffer.replace(first, second+multiSep.length(), replacement);
+                first += replacement.length();
+            } else break;
+        }
+
         Map<String, String> args = new HashMap<String, String>();
+/*
         Pattern multiLineStringsPattern = Pattern.compile("(?m)('''((.|\\r|\\n)+(.|\\r|\\n)(?=(''')))''')");
         Matcher matcher = multiLineStringsPattern.matcher(script);
         //convert multilines strings into single lines
-        StringBuffer buffer = new StringBuffer();
         while (matcher.find()){
             String strConst = matcher.group(2).replace("\n", "\\\\n").replace("\"", "\\\\\"");
             matcher.appendReplacement(buffer, "\"" + strConst + "\"");
         }
         matcher.appendTail(buffer);
+*/
         //LOGGER.debug("after string linearised :" + buffer.toString());
 
         Pattern beanRefPattern = Pattern.compile("(\"[^\"]*\")|(\\$\\{?([^\\s;}]+)\\}?)");
 
         //replace bean references with variables (excluding references within strings)
-        matcher = beanRefPattern.matcher(buffer.toString());
+        Matcher matcher = beanRefPattern.matcher(buffer.toString());
         buffer = new StringBuffer();
         int i=0;
         while (matcher.find()){
@@ -121,6 +135,7 @@ public class ScriptCommand{
         String line = null;
         while ((line = bufferedReader.readLine())!=null){
             sb.append(line);
+            sb.append("\n");
         }
         return sb;
     }
