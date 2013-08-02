@@ -63,14 +63,15 @@ Adding Spring Inspector to your application
 <dependency>
   <groupId>com.github.julior</groupId>
   <artifactId>spring-inspector</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.3-SNAPSHOT</version>
 </dependency>	
 ```
 
-2. Enable component scan in your Spring application context
+2. Enable component scan in your Spring application context (or declare the controller explicitly)
 ```xml
 <context:component-scan base-package="com.github.julior.springinspector" use-default-filters="false" >
 	<context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+	<context:include-filter type="annotation" expression="org.springframework.stereotype.Component"/>
 </context:component-scan>
 ```
 

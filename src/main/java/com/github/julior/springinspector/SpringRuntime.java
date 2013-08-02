@@ -176,7 +176,12 @@ public class SpringRuntime implements BeanFactoryAware {
 
     }
 
+    public void setBeanWhitelist(String[] beanWhitelist) {
+        this.beanWhitelist = beanWhitelist;
+    }
 
-
+    public void setBeanBlacklist(String[] beanBlacklist) {
+        this.beanBlacklist = beanBlacklist;
+    }
 }
 
