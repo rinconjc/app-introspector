@@ -1,221 +1,123 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Spring Inspector - 1.1</title>
-  <link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
-  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
-  <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
-  <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
-  <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
-
-  <style type="text/css">
-    body{
-      font: normal 65% Arial, sans-serif;
-      color: #555;
-    }
-    h1{
-      font-size: 250%;
-    }
-    #infoBox ul { list-style-type: none;
-      padding-left:5px;
-    }
-    #infoBoxTable{
-      padding: 0px;
-      margin: 0px;
-      border-collapse: collapse;
-      border: 1px solid #cccccc;
-      font-size: 100%;
-      width: 100%;
-      text-align: left;  
-      display: none;    
-    }
-    #storedBox ul{
-      width:100%;
-    }
-    #scriptArea{
-      font-size : 130%;
-      width:100%;height:100%;
-    }
-  </style>
-  <script>
-  function postScript(text){
-    $.ajax({
-      type:'POST',
-      url:'/spring/run',
-      contentType:'text/plain',
-      data:text,
-      success:function(data){
-        $("#ResultBox pre").text(typeof(data) == 'string'?data:JSON.stringify(data, null, 4));
-      }
-    });
-  }
-
-  function showBeanInfo(beanId){
-    $.getJSON('/spring/bean?id='+beanId + '&im=true', function(bean) {      
-      if(bean["class"]!=null){
-        $('#beanClass').attr('title', bean["class"]);
-        $('#beanClass').html('<em>' + beanId + '</em>: ' + bean["class"].substr(bean["class"].lastIndexOf('.')+1)); 
-      }else{
-        $('#beanClass').text(beanId)
-        $('#beanClass').attr('title', beanId);
-      }
-
-      var fields = [];
-      $.each(bean["properties"], function(key, val){
-        fields.push('<li><em>' + key + '</em> = ' + val + '</li>')
-      });
-
-      $('#beanFields').html('<ul>'+ fields.join('')+'</ul>')
-      var methods = [];
-      $.each(bean["methods"], function(i, meth){
-        methods.push('<li>' + meth.returnType + ' ' + meth.name + '('  + meth.paramTypes.join(', ')+ ')');
-      });
-      $('#beanMethods').html('<ul>' + methods.join('') + '</ul>')
-      $('#infoBoxTable').show();
-    });
-  }
-
-  function refreshRepo(stored){   
-    if(stored==null)  return;
-    var items = [];
-    $.each(stored, function(name, value){
-      items.push('<li><a href="#">' + name + '</a></li>'); 
-    });
-    $('#storedBox').html('<ul>' + items.sort().join('')+'</ul>');
-    $('#storedBox ul').menu({
-      selected: function(event, ui){
-        loadScript(ui.item.text());
-      }
-    });
-  }
-
-  function loadScript(scriptId){
-    var stored = JSON.parse(localStorage.getItem('STORED_SCRIPTS'));
-    $('#scriptArea').val(stored[scriptId]);
-  }
-
-  $(document).ready(function() {
-    //center     
-    var w = $(window).width();
-    var left = w<=1170?10:(w-1170)/2;
+  <head>
+    <title>Spring Inspector - 1.1</title>
+    <link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
+    <!--<link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+	<script src="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="http://layout.jquery-dev.net/lib/js/jquery.layout-latest.js"></script>-->
+    <script type="text/javascript" src="../resources/js/jquery.layout.min-1.2.0.js"></script>
     
-    $("#beansBox").dialog({modal:false, height:300, width:250, position:[left,60]});
-    $("#infoBox").dialog({modal:false, height:400, width:250, position:[left,370]}); //, 
-    $("#ScriptBox").dialog({modal:false, height:300, width:650, position:[left+260,60]
-        , buttons:{
-            "Execute":function(){
-                postScript($("#scriptArea").val());
-            }
-            ,"Save":function(){
-                var aText = $("#scriptArea").val();
-                if(aText.trim().length>0){
-                  $("#scriptNameBox").dialog({height:120, buttons:{
-                    "Ok":function(){
-                      var aName = $('#itemName').val();
-                      if(aName.trim().length>0){
-                        var stored = JSON.parse(localStorage.getItem('STORED_SCRIPTS'));
-                        if(stored==null) stored = {};
-                        stored[aName.trim()]=aText;                        
-                        localStorage.setItem('STORED_SCRIPTS', JSON.stringify(stored));
-                        $(this).dialog("close");
-                        refreshRepo(stored);
-                      }
-                    }
-                  }});
-                }
-            }    
-        }
-    });
-    $("#ResultBox").dialog({modal:false, height:400, width:650, position:[left+260,370]});
-
-    $('#storedBox').dialog({modal:false, height:710, width:250, position:[left+920,60]});
-
-    //load spring beans  
-    var beans = [];  
-    $.getJSON('/spring/beanNames', function(data) {
-      var items = [];
-      beans = data;
-      $.each(data, function(index, val) {
-        items.push('<li id="' + index + '"><a href="#">' + val + '</a></li>');
-        });
-
-      $('#beansList').append(items.join(''));
-      $("#beansList").menu({
-        selected: function(event, ui){
-          showBeanInfo(ui.item.text());
-        }
-      });      
-      //refresh       
-      refreshRepo(JSON.parse(localStorage.getItem('STORED_SCRIPTS')));
-    });
-
-});
-
-  </script>
-</head>
-<body >
-  
-    <h1 style='text-align:center'>Spring Console</h1>
-
-    <div id="beansBox" title="Spring Beans">
-      <ul id="beansList">
-      </ul>
-    </div>
-
-    <div id="infoBox" title="Bean Info">
-      <table id="infoBoxTable" border="1px">
-        <tr>
-          <td id="beanClass" title=''></td>
-        </tr>
-        <tr>
-          <th>Fields</th>
-        </tr>
-        <tr>
-          <td id="beanFields">
-
-          </td>
-        </tr>
-        <tr>
-          <th>Methods</th>
-        </tr>
-        <tr>
-          <td id="beanMethods">
-
-          </td>
-        </tr>
-      </table>
-    </div>
-    <div id="ScriptBox" title="Script">
-        <textarea id="scriptArea">//Type your javascript script here. You can reference any spring bean
-// by surrounding it's id with ${} e.g. ${mybean}.getSomething();</textarea>
-    </div>
-    <div id="ResultBox" title="Output">
-        <pre style="font-size:160%"></pre>
-    </div>
-
-    <div id='storedBox' title='Stored Scripts'>
-
-    </div>
-
-    <div id="scriptNameBox" title="Save current script" style="display:none">
-      <label>Name : </label><input name="itemName" id="itemName" size="30"/>      
-    </div>
-
+    <style type="text/css">
+      body{
+	  font: normal 65% Arial, sans-serif;
+	  color: #555;
+      }
+      h1{
+	  font-size: 250%;
+      }
+      #infoBox ul { list-style-type: none;
+		    padding-left:5px;
+		  }
+      #infoBoxTable{
+	  padding: 0px;
+	  margin: 0px;
+	  border-collapse: collapse;
+	  border: 1px solid #cccccc;
+	  font-size: 100%;
+	  width: 100%;
+	  text-align: left;
+	  display: none;
+      }
+      #storedBox ul{
+	  width:100%;
+      }
+      #scriptArea{
+	  font-size : 130%;
+	  width:100%;height:100%;
+      }
+    </style>
     <script type="text/javascript">
-      $("#scriptArea").keydown(function(event){
-        if(event.which==13 && event.ctrlKey){
-          postScript($("#scriptArea").val())
-        }
+      
+      $(document).ready(function() {
+	  $('#main').layout({applyDefaultStyles: false});
+	  $('#leftpane').layout({applyDefaultStyles: true});
       });
-
-/*      $("#scriptArea").keypress(function(event){
-        var pos = event.target.selectionStart;        
-        var textarea = $(this);
-        if(textarea.val().substring(0,pos).substr(-2)=='${'){
-          $("#scriptArea").autocomplete(['abc','abcde','abcxyz','xyz']);
-        }
-      });
-*/
+      
     </script>
-</body>
+    
+  </head>
+  <body>
+    <div class="container">
+      <div class="navbar">
+	<h1 style='text-align:center'>Spring Console</h1>
+      </div>
+      <div id="main">
+	<div id="leftpane" class="ui-layout-west">
+	  <div id="beansBox" class="ui-layout-center"  title="Spring Beans">
+	    <ul id="beansList">
+	      
+	    </ul>
+	  </div>
+	  <div id="infoBox" class="ui-layout-south" title="Bean Info">
+	    <table id="infoBoxTable" border="1px">
+              <tr>
+		<td id="beanClass" title=''></td>
+              </tr>
+              <tr>
+		<th>Fields</th>
+              </tr>
+              <tr>
+		<td id="beanFields">
+		  
+		</td>
+              </tr>
+              <tr>
+		<th>Methods</th>
+              </tr>
+              <tr>
+		<td id="beanMethods">
+		  
+		</td>
+              </tr>
+	    </table>
+	  </div>
+	</div>
+	
+	<div class="ui-layout-center">
+	  <div id="ScriptBox" title="Script">
+	    <textarea id="scriptArea" placeholder="Type your javascript script here. You can reference any spring bean by surrounding it's id with ${} e.g. ${mybean}.getSomething();"></textarea>
+	  </div>
+	  <div id="ResultBox" title="Output">
+	    <pre style="font-size:160%"></pre>
+	  </div>
+	  <script type="text/javascript">
+    	    $("#scriptArea").keydown(function(event){
+		if(event.which==13 && event.ctrlKey){
+		    postScript($("#scriptArea").val())
+		}
+	    });
+	    
+	    /*      $("#scriptArea").keypress(function(event){
+		    var pos = event.target.selectionStart;
+		    var textarea = $(this);
+		    if(textarea.val().substring(0,pos).substr(-2)=='${'){
+		    $("#scriptArea").autocomplete(['abc','abcde','abcxyz','xyz']);
+		    }
+		    });
+	    */
+	  </script>
+	</div>
+	<div class="ui-layout-east">
+	  <div id='storedBox' title='Stored Scripts'></div>
+	</div>
+      </div>
+    </div>
+    
+    <div id="scriptNameBox" title="Save current script" style="display:none">
+      <label>Name : </label><input name="itemName" id="itemName" size="30"/>
+    </div>
+  </body>
 </html>
