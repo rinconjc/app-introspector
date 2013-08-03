@@ -2,40 +2,152 @@
 <html>
   <head>
     <title>Spring Inspector - 1.3</title>
-    <link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
-    <script type="text/javascript" src="../resources/js/jquery.layout.min-1.2.0.js"></script>
-    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
-    <script type="text/javascript" src="http://layout.jquery-dev.net/lib/js/jquery.layout-latest.js"></script>
-    <link href="../resources/css/bootstrap.min.css" rel="stylesheet">
+    <script type="text/javascript" src="http://cdn.jsdelivr.net/codemirror/3.14.0/codemirror.js"></script>
+    <script type="text/javascript" src="../resources/js/javascript.js"></script>
+    <link rel="stylesheet" href="http://cdn.jsdelivr.net/codemirror/3.14.0/codemirror.css" type="text/css" media="screen" />
     <script src="../resources/js/bootstrap.min.js"></script>
+    <link href="../resources/css/bootstrap.min.css" rel="stylesheet">
     
     <script type="text/javascript">
+      function initSpringConsole(){
+	  var cm;
+	  function postScript(text){
+	      $.ajax({
+		  type:'POST',
+		  url:'/spring/run',
+		  contentType:'text/plain',
+		  data:text,
+		  success:function(data){
+		      $("#resultText").text(typeof(data) == 'string'?data:JSON.stringify(data, null, 4));
+		  }
+	      });
+	  }
+	  
+	  function showBeanInfo(beanId){
+	      $.getJSON('/spring/bean?id='+beanId + '&im=true', function(bean) {
+		  if(bean["class"]!=null){
+		      $('#beanClass').attr('title', bean["class"]);
+		      $('#beanClass').html('<em>' + beanId + '</em>: ' + bean["class"].substr(bean["class"].lastIndexOf('.')+1));
+		  }else{
+		      $('#beanClass').text(beanId)
+		      $('#beanClass').attr('title', beanId);
+		  }
+		  
+		  var fields = [];
+		  $.each(bean["properties"], function(key, val){
+		      fields.push('<li><em>' + key + '</em> = ' + val + '</li>')
+		  });
+		  
+		  $('#beanFields').html('<ul>'+ fields.join('')+'</ul>')
+		  var methods = [];
+		  $.each(bean["methods"], function(i, meth){
+		      methods.push('<li>' + meth.returnType + ' ' + meth.name + '('  + meth.paramTypes.join(', ')+ ')');
+		  });
+		  $('#beanMethods').html('<ul>' + methods.join('') + '</ul>')
+		  $('#infoBoxTable').show();
+	      });
+	  }
+	  
+	  function refreshRepo(stored){
+	      if(stored==null)  return;
+	      $('#savedScripts option:gt(0)').remove();
+	      var $ss = $('#savedScripts');
+	      $.each(stored, function(name, value){
+		  $ss.append($('<option></option>').attr('value', name).text(name))
+	      });
+	  }
+	  
+	  function loadScript(scriptId){
+	      var stored = JSON.parse(localStorage.getItem('STORED_SCRIPTS'));
+	      //$('#scriptArea').val(stored[scriptId]);
+	      cm.setValue(stored[scriptId]);
+	  }
+	  
+	  function saveScript(){
+	      var aText = cm.getValue(); //$("#scriptArea").val();
+	      if(aText.trim().length>0){
+		  var $sn = $('#scriptName');
+		  var sn = $sn.val();
+		  if(sn.trim().length<=0){
+		      $sn.parent().addClass('has-error');
+		      return;
+		  }
+		  $sn.parent().removeClass('has-error');
+		  var stored = JSON.parse(localStorage.getItem('STORED_SCRIPTS'));
+		  if(stored==null) stored = {};
+		  stored[sn]=aText;
+		  localStorage.setItem('STORED_SCRIPTS', JSON.stringify(stored));
+		  refreshRepo(stored);
+		  $sn.val("");
+	      }
+	  }
+	  
+	  //initialise
+	  $('#content').height($(window).height());
+	  cm = CodeMirror.fromTextArea($('#scriptArea').get(0));
+	  cm.setSize('100%',160);
+	  console.log('code mirror ' + cm);
+	  //refresh
+	  refreshRepo(JSON.parse(localStorage.getItem('STORED_SCRIPTS')));
+	  var $bl = $('#beanList');
+	  $bl.empty();
+	  $.getJSON('/spring/beanNames', function(data) {
+	      beans = data;
+	      $.each(data, function(index, val) {
+		  $bl.append($('<option></option>').attr('value',val).text(val));
+	      });
+	  });
+	  
+	  $bl.click(function(event){
+	      showBeanInfo($(event.target).val());
+	  });
+	  
+	  $('#savedScripts').change(function(e){
+	      loadScript($(this).val());
+	  });
+	  $('#btnExec').click(function(){
+	      postScript(cm.getValue());//$('#scriptArea').val());
+	  });
+	  $('#btnSave').click(function(){
+	      saveScript();
+	  });
+	  $('#scriptName').keypress(function(e){
+	      if(e.which==13) saveScript();
+	  });
+	  $('#scriptArea').parent().keydown(function(e){
+	      if(event.which==13 && event.ctrlKey){
+		  postScript(cm.getValue());
+	      }
+	  });
+	  
+      }
       
       $(document).ready(function() {
-	  
+	  initSpringConsole();
       });
       
     </script>
   </head>
-  <body >
-    <div class="navbar">
-      <a class="navbar-brand" href="#">Spring Console 1</a>
-    </div>
-    <div class="container">
+  <body>
+    <div id="content" class="container">
+      <div class="navbar text-center">
+	<h4>Spring Console</h4>
+      </div>
       <div class="row">
-	<div class="col-lg-2">
-	  <div class="panel">
-	    <div class="panel-heading">Available Beans</div>
-	    <select class="form-control" multiple>
+	<div class="col-lg-3">
+	  <div id="beansPanel" class="panel">
+	    <div class="panel-heading">Available Objects</div>
+	    <select id="beanList" size="12" class="form-control" multiple>
 	      <option>Bean 1</option>
 	    </select>
 	  </div>
 	  <div class="panel">
 	    <div class="panel-heading">
-	      Bean Info
+	      Object Info
 	    </div>
-	    <table id="infoBoxTable" class="table table-striped">
+	    <table id="infoBoxTable" class="table table-striped" style="display:none;">
               <tr>
 		<td id="beanClass" title=''></td>
               </tr>
@@ -57,43 +169,47 @@
 	    </table>
 	  </div>
 	</div>
-	<div class="col-lg-8">
+	<div class="col-lg-9">
 	  <div class="panel">
 	    <div class="panel-heading">
-	      Script Input
+	      <div class="row">
+		<div class="col-6" style="line-height:30px;">
+		  Script Input
+		</div>
+		<div class="col-6">
+		  <div class="col-lg-9">
+		    <select id="savedScripts" class="form-control" placeholder="---Saved Scripts ---" style="height:30px;line-height:30px;margin:0px;padding-top:0px;padding-bottom:0px;">
+		      <option>---Saved Scripts---</option>
+		    </select>
+		  </div>
+		</div>
+	      </div>
 	    </div>
+	    <textarea id="scriptArea" class="form-control" rows="8" placeholder="Type your javascript script here. You can reference any spring bean by surrounding it's id with ${} e.g. ${mybean}.getSomething();"></textarea>
 	    
-	    <textarea id="scriptArea" class="form-control" rows="10" placeholder="Type your javascript script here. You can reference any spring bean by surrounding it's id with ${} e.g. ${mybean}.getSomething();"></textarea>
-	    
-	    <div class="panel-footer text-right">
-	      <button type="button" class="btn btn-default">Execute</button>
-	      <button type="button" class="btn btn-default">Save</button>
+	    <div class="panel-footer">
+	      <div class="row">
+		<div class="col-lg-1 col-offset-7">
+		  <button type="button" id="btnExec" class="btn btn-default btn-small">Execute</button>
+		</div>
+		<div class="input-group col-lg-4">
+		  <span class="input-group-btn">
+		    <button type="button" id="btnSave" class="btn btn-default btn-small">Save As</button>
+		  </span>
+		  <input type="text" id="scriptName" class="form-control " value="" placeholder="script name" style="height:30px;line-height:30px;" />
+		</div>
+	      </div>
 	    </div>
-	    
 	  </div>
 	  <div class="panel">
 	    <div class="panel-heading">
 	      Script Output
 	    </div>
-	    <textarea name="resultText" id="resultText" rows="10" class="form-control" readonly ></textarea>
+	    <textarea name="resultText" id="resultText" rows="8" class="form-control" readonly ></textarea>
 	    
 	  </div>
 	</div>
-	<div class="col-lg-2">
-	  <div class="panel">
-	    <div class="panel-heading">
-	      Stored Scripts
-	    </div>
-	    <select class="form-control" multiple>
-	      <option>Script 1</option>
-	    </select>
-	  </div>
-	</div>
-	
       </div>
-    </div>
-    <div id="scriptNameBox" title="Save current script" style="display:none">
-      <label>Name : </label><input name="itemName" id="itemName" size="30"/>
     </div>
     
   </body>

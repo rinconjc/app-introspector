@@ -101,7 +101,7 @@ public class SpringInspector{
     @RequestMapping(value = "/console")
     public void showConsole(HttpServletRequest request, HttpServletResponse response){
         try {
-            InputStream resourceAsStream = getClass().getResourceAsStream("/inspector-form.html");
+            InputStream resourceAsStream = getClass().getResourceAsStream("/spring-console.html");
             transfer(resourceAsStream, response.getOutputStream());
             response.flushBuffer();
         } catch (IOException e) {
@@ -114,6 +114,10 @@ public class SpringInspector{
     public void getStaticResource(HttpServletRequest request, HttpServletResponse response){
         String servletPath = request.getServletPath();
         String resource = (servletPath.startsWith(RES_PREFIX)? servletPath.substring(RES_PREFIX.length()-1):servletPath);
+        int pos = resource.lastIndexOf('_');
+        if(pos>0){
+            resource = resource.substring(0,pos)+"."+resource.substring(pos+1);
+        }
         LOGGER.debug("Serving resource:" + resource);
         try {
             response.setDateHeader("Expires", System.currentTimeMillis()+3600000L);
