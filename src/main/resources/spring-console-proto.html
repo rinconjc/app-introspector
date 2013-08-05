@@ -86,8 +86,8 @@
 	  
 	  //initialise
 	  $('#content').height($(window).height());
-	  cm = CodeMirror.fromTextArea($('#scriptArea').get(0));
-	  cm.setSize('100%',160);
+	  cm = CodeMirror.fromTextArea($('#scriptArea').get(0), {viewportMargin:Infinity});
+	  cm.setSize('100%',170);
 	  console.log('code mirror ' + cm);
 	  //refresh
 	  refreshRepo(JSON.parse(localStorage.getItem('STORED_SCRIPTS')));
@@ -132,6 +132,9 @@
     <style type="text/css" media="screen">
       .small-ul {x-overflow:hidden}
       .small-ul li {padding:4px;}
+      .CodeMirror {
+	  border:1px solid #eee;
+      }
     </style>
   </head>
   <body>
@@ -154,17 +157,17 @@
 	    <h4>myObject: someClass</h4>
 	    <h5>Fields</h5>
 	    <small>
-	    <ul class="list-group small-ul">
-	      <li class="list-group-item"><em>Field 1</em> = Some value </li>
-	      <li class="list-group-item">Field 2</li>
-	    </ul>
+	      <ul class="list-group small-ul">
+		<li class="list-group-item"><em>Field 1</em> = Some value </li>
+		<li class="list-group-item">Field 2</li>
+	      </ul>
 	    </small>
 	    <h5>Methods</h5>
 	    <small>
-	    <ul class="list-group small-ul">
-	      <li class="list-group-item">SomeClass <em>getAnInstanceOfSomeClass</em>(String,Integer)</li>
-	      <li class="list-group-item">Method 2: return</li>
-	    </ul>
+	      <ul class="list-group small-ul">
+		<li class="list-group-item">SomeClass <em>getAnInstanceOfSomeClass</em>(String,Integer)</li>
+		<li class="list-group-item">Method 2: return</li>
+	      </ul>
 	    </small>
 	  </div>
 	</div>
