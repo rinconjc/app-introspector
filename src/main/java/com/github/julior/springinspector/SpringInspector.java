@@ -120,9 +120,14 @@ public class SpringInspector{
         }
         LOGGER.debug("Serving resource:" + resource);
         try {
-            response.setDateHeader("Expires", System.currentTimeMillis()+3600000L);
+            response.setDateHeader("Expires", System.currentTimeMillis()+7*24*60*60000L);
             response.setHeader("Cache-Control","public");
             InputStream resourceAsStream = getClass().getResourceAsStream(resource);
+            if(resourceAsStream==null){
+                response.setStatus(404);
+                response.getWriter().write("Resource not available :" + resource);
+                return;
+            }
             transfer(resourceAsStream, response.getOutputStream());
             response.flushBuffer();
         } catch (IOException e) {
