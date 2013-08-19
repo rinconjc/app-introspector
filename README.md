@@ -58,7 +58,7 @@ getField(${messageListener}, 'retryCount')
 
 Adding Spring Inspector to your application
 --------------------------
-1. Add the following dependency to your maven pom.xml (if not using maven include the jar file directly in your project classpath)
+1. Add the following dependency to your maven pom.xml (if not using maven, include the [jar file](https://oss.sonatype.org/content/repositories/snapshots/com/github/julior/spring-inspector) directly in your project classpath)
 ```xml
 <dependency>
   <groupId>com.github.julior</groupId>
@@ -66,6 +66,7 @@ Adding Spring Inspector to your application
   <version>1.3-SNAPSHOT</version>
 </dependency>	
 ```
+The snapshot repository is at https://oss.sonatype.org/content/repositories/snapshots
 
 2. Enable component scan in your Spring application context (or declare the controller explicitly)
 ```xml
