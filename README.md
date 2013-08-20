@@ -75,6 +75,13 @@ The snapshot repository is at https://oss.sonatype.org/content/repositories/snap
 	<context:include-filter type="annotation" expression="org.springframework.stereotype.Component"/>
 </context:component-scan>
 ```
+if no PropertyPlaceholderConfiguration is defined in your Spring context, the above may fail, if so declare the component explicitly instead (also remove the include Componet filter from above).
+```xml
+<bean id="springruntime" class="com.github.julior.springinspector.SpringRuntime">
+	<property name="beanWhitelist" value="<empty or comma separated list of bean names to include>"/>
+	<property name="beanBlacklist" value="<empty or comma separated list of bean names to exclude>"/>
+</bean>
+```
 
 3. Secure the /spring/* endpoints. This is a powerfull tool hence security restrictions have to be put accordingly. For instance with Spring Security module you can restrict the endpoints easily like this:
 ```xml
