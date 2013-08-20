@@ -98,12 +98,14 @@ public class SpringRuntime implements BeanFactoryAware {
         }
         Collections.sort(beanNames);
         //apply blacklist/whitelist filtering
-        return Collections2.filter(beanNames, new Predicate<String>() {
+        Collection<String> filteredBeans = Collections2.filter(beanNames, new Predicate<String>() {
             @Override
             public boolean apply(String input) {
                 return isBeanAllowed(input);
             }
         });
+        //LOGGER.debug("bean names:" + Arrays.deepToString(filteredBeans.toArray()));
+        return filteredBeans;
     }
 
     Boolean isBeanAllowed(String name) {
