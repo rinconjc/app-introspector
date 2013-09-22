@@ -58,7 +58,7 @@ getField(${messageListener}, 'retryCount')
 
 Adding Spring Inspector to your application
 --------------------------
-1. Add the following dependency to your maven pom.xml (if not using maven include the jar file directly in your project classpath)
+1. Add the following dependency to your maven pom.xml (if not using maven, include the [jar file](https://oss.sonatype.org/content/repositories/snapshots/com/github/julior/spring-inspector) directly in your project classpath)
 ```xml
 <dependency>
   <groupId>com.github.julior</groupId>
@@ -66,6 +66,7 @@ Adding Spring Inspector to your application
   <version>1.3-SNAPSHOT</version>
 </dependency>	
 ```
+The snapshot repository is at https://oss.sonatype.org/content/repositories/snapshots
 
 2. Enable component scan in your Spring application context (or declare the controller explicitly)
 ```xml
@@ -73,6 +74,13 @@ Adding Spring Inspector to your application
 	<context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
 	<context:include-filter type="annotation" expression="org.springframework.stereotype.Component"/>
 </context:component-scan>
+```
+if no PropertyPlaceholderConfiguration is defined in your Spring context, the above may fail, if so declare the component explicitly instead (also remove the include Componet filter from above).
+```xml
+<bean id="springruntime" class="com.github.julior.springinspector.SpringRuntime">
+	<property name="beanWhitelist" value="<empty or comma separated list of bean names to include>"/>
+	<property name="beanBlacklist" value="<empty or comma separated list of bean names to exclude>"/>
+</bean>
 ```
 
 3. Secure the /spring/* endpoints. This is a powerfull tool hence security restrictions have to be put accordingly. For instance with Spring Security module you can restrict the endpoints easily like this:
