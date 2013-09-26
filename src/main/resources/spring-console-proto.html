@@ -7,9 +7,10 @@
     <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
     <script type="text/javascript" src="http://cdn.jsdelivr.net/codemirror/3.14.0/codemirror.js"></script>
     <script type="text/javascript" src="../resources/js/javascript.js"></script>
+    <script type="text/javascript" src="../resources/js/splitter-152.js"></script>
     <link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
     <link rel="stylesheet" href="http://cdn.jsdelivr.net/codemirror/3.14.0/codemirror.css" type="text/css" media="screen" />
-    <script src="../resources/js/bootstrap.min.js"></script>
+    <!-- <script src="../resources/js/bootstrap.min.js"></script> -->
     <link href="../resources/css/bootstrap.min.css" rel="stylesheet">
     
     <script type="text/javascript">
@@ -131,95 +132,142 @@
       }
       
       $(document).ready(function() {
-	  initSpringConsole();
+	  //$('#main-row').height($(window).height()-100);
+	  $('#main-row').splitter({
+	      splitVertical: true,
+	      outline: true,
+	      sizeLeft: 300,
+	      resizeTo: window,
+	      accessKey: "I"
+	  });
+	  $('#left-pane').splitter({
+	      splitHorizontal: true,
+	      sizeTop: true,
+	      accessKey: "H"
+	      });
+	  $('#rightPane').splitter({
+	      splitHorizontal: true,
+	      sizeTop: true,
+	      accessKey: "H"
+	  });
+
+	  //initSpringConsole();
       });
       
     </script>
     <style type="text/css" media="screen">
+      html, body{
+	  margin:0;
+	  padding:0;
+	  overflow:hidden;
+      }
       .small-ul {x-overflow:hidden}
       .small-ul li {padding:4px;}
       .CodeMirror {
 	  border:1px solid #eee;
       }
+      #main-row{
+	  margin: 0 auto;
+	  width:100%;
+	  min-height: 300px;
+	  height:100%;
+	  border: 5px solid #ddd;
+      }
+      #main-row div{
+      /*overflow:auto;*/
+      }
+      .vsplitbar {
+	  width: 5px;
+	  background: #ddd;
+      }
+      .splitter-pane {
+	  overflow: auto;
+      }
+      .navbar{
+	  margin-bottom:5px;
+      }
+      #left-pane{
+	  
+      }
     </style>
   </head>
   <body>
-    <div id="content" class="container">
-      <div class="navbar text-center">
-	<h4>Spring Console</h4>
-      </div>
-      <div class="row">
-	<div class="col-lg-3">
-	  <div id="beansPanel" class="panel">
-	    <div class="panel-heading">Available Objects</div>
-	    <select id="beanList" size="12" class="form-control" multiple>
-	      <option>Bean 1</option>
-	    </select>
+    <div class="navbar text-center">
+      <h4>Spring Console</h4>
+    </div>
+    
+    <div id="main-row">
+      <div id="left-pane">
+	<div id="beansPanel" class="panel">
+	  <div class="panel-heading">Available Objects</div>
+	  <select id="beanList" size="12" class="form-control" multiple>
+	    <option>Bean 1</option>
+	  </select>
+	</div>
+	<div class="panel" id="infoPanel">
+	  <div class="panel-heading">
+	    Object Info
 	  </div>
-	  <div class="panel" id="infoPanel">
-	    <div class="panel-heading">
-	      Object Info
+	  <h4>myObject: someClass</h4>
+	  <h5>Fields</h5>
+	  <small>
+	    <ul class="list-group small-ul">
+	      <li class="list-group-item"><em>Field 1</em> = Some value </li>
+	      <li class="list-group-item">Field 2</li>
+	    </ul>
+	  </small>
+	  <h5>Methods</h5>
+	  <small>
+	    <ul class="list-group small-ul">
+	      <li class="list-group-item">SomeClass <em>getAnInstanceOfSomeClass</em>(String,Integer)</li>
+	      <li class="list-group-item">Method 2: return</li>
+	    </ul>
+	  </small>
+	</div>
+      </div>
+      <div id="rightPane">
+	<div class="panel">
+	  <div class="panel-heading">
+	    <div class="row">
+	      <div class="col-6" style="line-height:30px;">
+		Script Input
+	      </div>
+	      <div class="col-6">
+		<div class="col-lg-9">
+		  <select id="savedScripts" class="form-control" placeholder="---Saved Scripts ---" style="height:30px;line-height:30px;margin:0px;padding-top:0px;padding-bottom:0px;">
+		    <option>---Saved Scripts---</option>
+		  </select>
+		</div>
+	      </div>
 	    </div>
-	    <h4>myObject: someClass</h4>
-	    <h5>Fields</h5>
-	    <small>
-	      <ul class="list-group small-ul">
-		<li class="list-group-item"><em>Field 1</em> = Some value </li>
-		<li class="list-group-item">Field 2</li>
-	      </ul>
-	    </small>
-	    <h5>Methods</h5>
-	    <small>
-	      <ul class="list-group small-ul">
-		<li class="list-group-item">SomeClass <em>getAnInstanceOfSomeClass</em>(String,Integer)</li>
-		<li class="list-group-item">Method 2: return</li>
-	      </ul>
-	    </small>
+	  </div>
+	  <div class="scriptContainer">
+	    <textarea id="scriptArea" class="form-control" rows="8" placeholder="Type your javascript script here. You can reference any spring bean by surrounding it's id with ${} e.g. ${mybean}.getSomething();"></textarea>
+	  </div>
+	  <div class="panel-footer">
+	    <div class="row">
+	      <div class="col-lg-1 col-offset-7">
+		<button type="button" id="btnExec" class="btn btn-default btn-small">Execute</button>
+	      </div>
+	      <div class="input-group col-lg-4">
+		<span class="input-group-btn">
+		  <button type="button" id="btnSave" class="btn btn-default btn-small">Save As</button>
+		</span>
+		<input type="text" id="scriptName" class="form-control " value="" placeholder="script name" style="height:30px;line-height:30px;" />
+	      </div>
+	    </div>
 	  </div>
 	</div>
-	<div class="col-lg-9">
-	  <div class="panel">
-	    <div class="panel-heading">
-	      <div class="row">
-		<div class="col-6" style="line-height:30px;">
-		  Script Input
-		</div>
-		<div class="col-6">
-		  <div class="col-lg-9">
-		    <select id="savedScripts" class="form-control" placeholder="---Saved Scripts ---" style="height:30px;line-height:30px;margin:0px;padding-top:0px;padding-bottom:0px;">
-		      <option>---Saved Scripts---</option>
-		    </select>
-		  </div>
-		</div>
-	      </div>
-	    </div>
-	    <div class="scriptContainer">
-	      <textarea id="scriptArea" class="form-control" rows="8" placeholder="Type your javascript script here. You can reference any spring bean by surrounding it's id with ${} e.g. ${mybean}.getSomething();"></textarea>
-	    </div>
-	    <div class="panel-footer">
-	      <div class="row">
-		<div class="col-lg-1 col-offset-7">
-		  <button type="button" id="btnExec" class="btn btn-default btn-small">Execute</button>
-		</div>
-		<div class="input-group col-lg-4">
-		  <span class="input-group-btn">
-		    <button type="button" id="btnSave" class="btn btn-default btn-small">Save As</button>
-		  </span>
-		  <input type="text" id="scriptName" class="form-control " value="" placeholder="script name" style="height:30px;line-height:30px;" />
-		</div>
-	      </div>
-	    </div>
+	<div class="panel">
+	  <div class="panel-heading">
+	    Script Output
 	  </div>
-	  <div class="panel">
-	    <div class="panel-heading">
-	      Script Output
-	    </div>
-	    <textarea name="resultText" id="resultText" rows="8" class="form-control" readonly ></textarea>
-	    
-	  </div>
+	  <textarea name="resultText" id="resultText" rows="8" class="form-control" readonly ></textarea>
+	  
 	</div>
       </div>
     </div>
+    
     
   </body>
 </html>
