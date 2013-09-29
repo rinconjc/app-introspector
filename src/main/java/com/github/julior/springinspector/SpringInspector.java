@@ -3,6 +3,7 @@ package com.github.julior.springinspector;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -21,17 +22,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 /**
- * Created by IntelliJ IDEA.
- * User: rinconj
- * Date: 9/12/11
- * Time: 3:13 PM
- * To change this template use File | Settings | File Templates.
+ * Controller for SpringInspector
  */
 @Controller
 @RequestMapping("/spring/*")
@@ -44,6 +44,12 @@ public class SpringInspector{
 
     @Autowired
     private SpringRuntime springRuntime;
+
+    @Value("${spring-inspector.firebase-path:}")
+    private String fireBaseJwt;
+
+    @Value("${spring-inspector.firebase-jwt:}")
+    private String fireBaseRef;
 
     @PostConstruct
     public void postConstruct(){
@@ -138,6 +144,16 @@ public class SpringInspector{
         }
     }
 
+    @RequestMapping(value = "/firebase", method = GET)
+    public Map<String,String> getFirebaseDetails(){
+        if(fireBaseRef==null || fireBaseRef.trim().length()<=0)
+            return Collections.EMPTY_MAP;
+        HashMap<String, String> values = new HashMap<String, String>();
+        values.put("firebaseUrl", fireBaseRef);
+        values.put("firebaseJwt", fireBaseJwt);
+        return values;
+    }
+
     private void transfer(InputStream in, OutputStream out) throws IOException {
         byte[] buffer = new byte[1024];
         int len = 0;
@@ -172,6 +188,21 @@ public class SpringInspector{
         }
     }
 
+    public String getFireBaseJwt() {
+        return fireBaseJwt;
+    }
+
+    public void setFireBaseJwt(String fireBaseJwt) {
+        this.fireBaseJwt = fireBaseJwt;
+    }
+
+    public String getFireBaseRef() {
+        return fireBaseRef;
+    }
+
+    public void setFireBaseRef(String fireBaseRef) {
+        this.fireBaseRef = fireBaseRef;
+    }
 }
 
 
