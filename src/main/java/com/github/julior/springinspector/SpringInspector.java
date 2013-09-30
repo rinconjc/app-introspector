@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -45,11 +47,14 @@ public class SpringInspector{
     @Autowired
     private SpringRuntime springRuntime;
 
-    @Value("${spring-inspector.firebase-path:}")
+    @Value("${spring-console.firebase-path:}")
     private String fireBaseJwt;
 
-    @Value("${spring-inspector.firebase-jwt:}")
+    @Value("${spring-console.firebase-jwt:}")
     private String fireBaseRef;
+
+    @Value("${spring-console.appname:}")
+    private String appName;
 
     @PostConstruct
     public void postConstruct(){
@@ -145,13 +150,25 @@ public class SpringInspector{
     }
 
     @RequestMapping(value = "/firebase", method = GET)
-    public Map<String,String> getFirebaseDetails(){
-        if(fireBaseRef==null || fireBaseRef.trim().length()<=0)
-            return Collections.EMPTY_MAP;
+    public void getFirebaseDetails(HttpServletResponse response){
         HashMap<String, String> values = new HashMap<String, String>();
-        values.put("firebaseUrl", fireBaseRef);
-        values.put("firebaseJwt", fireBaseJwt);
-        return values;
+        if(fireBaseRef!=null && fireBaseRef.trim().length()>0){
+            values.put("firebaseUrl", fireBaseRef);
+            values.put("firebaseJwt", fireBaseJwt);
+        }
+        writeJson(values, response);
+    }
+
+    @RequestMapping(value = "/serverinfo", method = GET)
+    public void getServerInfo(HttpServletResponse response){
+        HashMap<String, String> attrs = new HashMap<String, String>();
+        attrs.put("appName", appName);
+        try {
+            attrs.put("hostname", InetAddress.getLocalHost().getHostName());
+        } catch (UnknownHostException e) {
+            LOGGER.warn("Failed determining local host name", e);
+        }
+        writeJson(attrs, response);
     }
 
     private void transfer(InputStream in, OutputStream out) throws IOException {
@@ -202,6 +219,14 @@ public class SpringInspector{
 
     public void setFireBaseRef(String fireBaseRef) {
         this.fireBaseRef = fireBaseRef;
+    }
+
+    public String getAppName() {
+        return appName;
+    }
+
+    public void setAppName(String appName) {
+        this.appName = appName;
     }
 }
 

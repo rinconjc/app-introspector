@@ -14,7 +14,7 @@ function initSpringConsole(){
 	    success:function(data){
 		$("#resultText").text(typeof(data) == 'string'?data:JSON.stringify(data, null, 4));
 		var end = new Date();
-		$('#exec-info').text('completed in '+ duration(end.getTime()-start) + ' at ' + end.getHours() + ':' + 
+		$('#exec-info').text('completed in '+ duration(end.getTime()-start) + ' at ' + end.getHours() + ':' +
 				     end.getMinutes() + ':' + end.getSeconds() + '.' + end.getMilliseconds());
 		$('#spinner').hide();
 	    }
@@ -118,22 +118,19 @@ function initSpringConsole(){
 
     //config firebase from data
     function initScriptStore(){
+	//default to local store
+	scriptStore = localStore();
 	$.ajax({type:'GET', url:'/spring/firebase', contentType:'application/json', success:function(data){
-	    function(){
-		if(data.firebaseUrl){
-		    var dataRef = new Firebase(data.firebaseUrl);
-		    dataRef.auth(data.firebaseJwt, function(error){
-			if(error){
-			    console.log('Failed authentication to firebase ' + error);
-			}else{
-			    scriptStore = firebaseStore(dataRef);
-			    return;
-			}
-		    });
-		}
-		//default to local store
-		scriptStore = localStore();
-	    }();
+	    if(data.firebaseUrl){
+		var dataRef = new Firebase(data.firebaseUrl);
+		dataRef.auth(data.firebaseJwt, function(error){
+		    if(error){
+			console.log('Failed authentication to firebase ' + error);
+		    }else{
+			scriptStore = firebaseStore(dataRef);
+		    }
+		});
+	    }
 	    scriptStore.bindTo('#savedScripts');
 	}});
     }
@@ -181,5 +178,17 @@ function initSpringConsole(){
 	    cm.setSize($(this).width(), $(this).height());
 	}
     });
+    //resize to fill window
+    var gap = $(window).height() - ($('.row').position().top + $('.row').height());
+    if(gap>0){
+	var sc = $('#scriptContainer');
+	sc.height(sc.height()+gap/2);
+	var rt = $('#resultText');
+	rt.height(rt.height()+gap/2);
+    }
+    //load server info
+    $.ajax({type:'GET', url:'/spring/serverinfo', contentType:'application/json', success:function(data){
+	$('#appLabel').text(data.appName + ' : ' + (data.hostname || ''));
+    }});
 
 }
