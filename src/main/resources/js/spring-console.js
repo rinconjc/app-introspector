@@ -5,6 +5,7 @@ function initSpringConsole(){
     var scriptStore;
     function postScript(text){
 	$('#spinner').show();
+	$('#exec-info').text('');
 	var start = new Date().getTime();
 	$.ajax({
 	    type:'POST',
