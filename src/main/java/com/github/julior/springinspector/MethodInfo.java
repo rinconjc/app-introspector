@@ -8,7 +8,7 @@ import java.util.List;
  * User: rinconj
  * Date: 9/22/11 11:44 AM
  */
-class MethodInfo{
+public class MethodInfo{
     private String name;
     private String[] paramTypes;
     private String returnType;

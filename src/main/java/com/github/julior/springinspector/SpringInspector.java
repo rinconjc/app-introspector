@@ -1,7 +1,10 @@
 package com.github.julior.springinspector;
 
+import com.firebase.security.token.TokenGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -24,10 +27,8 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Map;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
@@ -47,10 +48,10 @@ public class SpringInspector{
     @Autowired
     private SpringRuntime springRuntime;
 
-    @Value("${spring-console.firebase-path:}")
-    private String fireBaseJwt;
+    @Value("${spring-console.firebase-secret:}")
+    private String fireBaseSecret;
 
-    @Value("${spring-console.firebase-jwt:}")
+    @Value("${spring-console.firebase-path:}")
     private String fireBaseRef;
 
     @Value("${spring-console.appname:}")
@@ -150,11 +151,11 @@ public class SpringInspector{
     }
 
     @RequestMapping(value = "/firebase", method = GET)
-    public void getFirebaseDetails(HttpServletResponse response){
+    public void getFirebaseDetails(HttpServletResponse response, HttpServletRequest request) throws JSONException {
         HashMap<String, String> values = new HashMap<String, String>();
         if(fireBaseRef!=null && fireBaseRef.trim().length()>0){
             values.put("firebaseUrl", fireBaseRef);
-            values.put("firebaseJwt", fireBaseJwt);
+            values.put("firebaseJwt", new TokenGenerator(fireBaseSecret).createToken(new JSONObject().put("user", request.getRemoteUser())));
         }
         writeJson(values, response);
     }
@@ -205,12 +206,12 @@ public class SpringInspector{
         }
     }
 
-    public String getFireBaseJwt() {
-        return fireBaseJwt;
+    public String getFireBaseSecret() {
+        return fireBaseSecret;
     }
 
-    public void setFireBaseJwt(String fireBaseJwt) {
-        this.fireBaseJwt = fireBaseJwt;
+    public void setFireBaseSecret(String fireBaseSecret) {
+        this.fireBaseSecret = fireBaseSecret;
     }
 
     public String getFireBaseRef() {

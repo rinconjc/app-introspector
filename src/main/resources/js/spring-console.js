@@ -6,6 +6,7 @@ function initSpringConsole(){
     function postScript(text){
 	$('#spinner').show();
 	$('#exec-info').text('');
+	$("#resultText").text('');
 	var start = new Date().getTime();
 	$.ajax({
 	    type:'POST',
@@ -74,12 +75,13 @@ function initSpringConsole(){
 	var scriptsRef = dataRef.child('scripts');
 	return {
 	    saveScript:function(name, scriptBody){
-		scriptsRef.child(name).push({name:name, value:scriptBody});
+		scriptsRef.child(name).set({name:name, value:scriptBody});
 	    },
-	    bindTo:function(elem){
+	    bindTo:function(elem){		
 		scriptsRef.on('child_added', function(snapshot){
-		    var entry = snaphost.val();
-		    $(elem).append($('<option></option>').attr('value', entry.name).text(entry.name));
+		    console.log('snapshot is ' + JSON.stringify(snapshot));
+		    var name = snapshot.val().name;
+		    $(elem).append($('<option></option>').attr('value', name).text(name));
 		});
 	    },
 	    retrieve:function(name, callback){
@@ -96,14 +98,14 @@ function initSpringConsole(){
 		var stored = JSON.parse(localStorage.getItem('STORED_SCRIPTS'));
 		if(stored==null) stored = {};
 		var isnew = typeof(stored[name])=='undefined';
-		stored[sn]=scriptBody;
+		stored[name]=scriptBody;
 		localStorage.setItem('STORED_SCRIPTS', JSON.stringify(stored));
 		if(isnew){
 		    this.selectField.append($('<option></option>').attr('value', name).text(name));
 		}
 	    },
 	    bindTo:function(elem){
-		this.selectField = elem;
+		this.selectField = $(elem);
 		var stored = JSON.parse(localStorage.getItem('STORED_SCRIPTS'));
 		var $ss = $(elem);
 		$.each(stored, function(name, value){
@@ -123,16 +125,21 @@ function initSpringConsole(){
 	scriptStore = localStore();
 	$.ajax({type:'GET', url:'/spring/firebase', contentType:'application/json', success:function(data){
 	    if(data.firebaseUrl){
+		console.log('connecting to firebase');
 		var dataRef = new Firebase(data.firebaseUrl);
 		dataRef.auth(data.firebaseJwt, function(error){
 		    if(error){
 			console.log('Failed authentication to firebase ' + error);
 		    }else{
 			scriptStore = firebaseStore(dataRef);
+			console.log('connected to firebase');
 		    }
+		    scriptStore.bindTo('#savedScripts');			
 		});
+	    } else{
+		console.log('firebase details not provided :' + data);
+		scriptStore.bindTo('#savedScripts');
 	    }
-	    scriptStore.bindTo('#savedScripts');
 	}});
     }
 
@@ -184,6 +191,7 @@ function initSpringConsole(){
     if(gap>0){
 	var sc = $('#scriptContainer');
 	sc.height(sc.height()+gap/2);
+	cm.setSize(sc.width(), sc.height());
 	var rt = $('#resultText');
 	rt.height(rt.height()+gap/2);
     }
