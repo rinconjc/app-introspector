@@ -155,7 +155,9 @@ public class SpringInspector{
         HashMap<String, String> values = new HashMap<String, String>();
         if(fireBaseRef!=null && fireBaseRef.trim().length()>0){
             values.put("firebaseUrl", fireBaseRef);
-            values.put("firebaseJwt", new TokenGenerator(fireBaseSecret).createToken(new JSONObject().put("user", request.getRemoteUser())));
+            String user = request.getRemoteUser()==null?"unknown":request.getRemoteUser();
+            LOGGER.debug("authenticating for remote user " + user);
+            values.put("firebaseJwt", new TokenGenerator(fireBaseSecret).createToken(new JSONObject().put("user", user)));
         }
         writeJson(values, response);
     }

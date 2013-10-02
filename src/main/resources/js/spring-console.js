@@ -75,18 +75,18 @@ function initSpringConsole(){
 	var scriptsRef = dataRef.child('scripts');
 	return {
 	    saveScript:function(name, scriptBody){
-		scriptsRef.child(name).set({name:name, value:scriptBody});
+		scriptsRef.child(name).set({content:scriptBody});
 	    },
 	    bindTo:function(elem){		
 		scriptsRef.on('child_added', function(snapshot){
-		    console.log('snapshot is ' + JSON.stringify(snapshot));
-		    var name = snapshot.val().name;
+		    //console.log('snapshot is ' + JSON.stringify(snapshot));
+		    var name = snapshot.name();
 		    $(elem).append($('<option></option>').attr('value', name).text(name));
 		});
 	    },
 	    retrieve:function(name, callback){
 		scriptsRef.child(name).on('value', function(snapshot){
-		    callback(snapshot.val().value);
+		    callback(snapshot.val().content);
 		});
 	    }
 	}
