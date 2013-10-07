@@ -57,18 +57,10 @@ function initSpringConsole(){
 	});
     }
 
-    function saveScript(){
-	var aText = cm.getValue(); //$("#scriptArea").val();
-	if(aText.trim().length>0){
-	    var $sn = $('#scriptName');
-	    var sn = $sn.val();
-	    if(sn.trim().length<=0){
-		$sn.parent().addClass('has-error');
-		return;
-	    }
-	    $sn.parent().removeClass('has-error');
-	    scriptStore.saveScript(sn, aText);
-	}
+    function saveScript(name){
+	scriptStore.saveScript(name, cm.getValue());
+	$('#savedScripts').val(name);
+	$('#toast').text('Script Saved').show().fadeOut(2000);
     }
 
     function firebaseStore(dataRef){
@@ -77,7 +69,7 @@ function initSpringConsole(){
 	    saveScript:function(name, scriptBody){
 		scriptsRef.child(name).set({content:scriptBody});
 	    },
-	    bindTo:function(elem){		
+	    bindTo:function(elem){
 		scriptsRef.on('child_added', function(snapshot){
 		    //console.log('snapshot is ' + JSON.stringify(snapshot));
 		    var name = snapshot.name();
@@ -134,7 +126,7 @@ function initSpringConsole(){
 			scriptStore = firebaseStore(dataRef);
 			console.log('connected to firebase');
 		    }
-		    scriptStore.bindTo('#savedScripts');			
+		    scriptStore.bindTo('#savedScripts');
 		});
 	    } else{
 		console.log('firebase details not provided :' + data);
@@ -167,18 +159,46 @@ function initSpringConsole(){
     $('#savedScripts').change(function(e){
 	loadScript($(this).val());
     });
+
     $('#btnExec').click(function(){
-	postScript(cm.getValue());//$('#scriptArea').val());
+	postScript(cm.getValue());
     });
+
     $('#btnSave').click(function(){
-	saveScript();
+	if($('#savedScripts').val()!=''){
+	    saveScript($('#savedScripts').val());
+	} else{
+	    var aText = cm.getValue(); 
+	    if(aText.trim().length<=0) return;
+	    $('#scriptName').val('');
+	    $('#saveAsDialog').modal();		    
+	}
     });
+    
+    $('#btnClear').click(function(){
+	$('#savedScripts').val('');
+	cm.setValue('');
+    });
+
     $('#scriptName').keypress(function(e){
-	if(e.which==13) saveScript();
+	if(e.which!=13) return;
+	var input = $('#scriptName');
+	if(input.val().trim().length<=0){
+	    input.parent().addClass('has-error');
+	    return;
+	}
+	saveScript(input.val().trim());
+	$('#saveAsDialog').modal('hide');	
     });
+
     $('#scriptArea').parent().keydown(function(e){
-	if(event.which==13 && event.ctrlKey){
-	    postScript(cm.getValue());
+	if(event.ctrlKey){
+	    switch(event.which){
+		case 13: postScript(cm.getValue()); return;
+		case 66: $('#btnSave').click(); return;
+		case 73: $('#btnClear').click(); return;
+		//default : console.log('other key ' + event.which);
+	    }
 	}
     });
     $('#scriptContainer').resizable({
@@ -199,5 +219,13 @@ function initSpringConsole(){
     $.ajax({type:'GET', url:'/spring/serverinfo', contentType:'application/json', success:function(data){
 	$('#appLabel').text(data.appName + ' : ' + (data.hostname || ''));
     }});
+    
+    $('#saveAsDialog').on('shown.bs.modal', function(){
+	var input = $('#scriptName');
+	input.val('').focus();
+	input.parent().removeClass('has-error');
+    }).on('hidden.bs.modal', function(){
+	cm.focus();
+    });
 
 }
