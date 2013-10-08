@@ -1,4 +1,4 @@
-package com.github.julior.springinspector;
+package com.github.julior.appintrospector;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;

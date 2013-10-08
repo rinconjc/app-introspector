@@ -1,4 +1,4 @@
-package com.github.julior.springinspector;
+package com.github.julior.appintrospector;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = TestWebContext.class)
 @WebAppConfiguration
-public class SpringInspectorTest {
+public class AppIntrospectorTest {
     @Autowired
     WebApplicationContext wac; // cached
 

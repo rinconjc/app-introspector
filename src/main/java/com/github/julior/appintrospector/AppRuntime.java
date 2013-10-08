@@ -1,4 +1,4 @@
-package com.github.julior.springinspector;
+package com.github.julior.appintrospector;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
@@ -26,15 +26,15 @@ import java.util.*;
  * Date: 4/30/13 11:57 AM
  */
 @Component
-public class SpringRuntime implements BeanFactoryAware {
-    private final static org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(SpringInspector.class);
+public class AppRuntime implements BeanFactoryAware {
+    private final static org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(AppIntrospector.class);
     private final static ScriptEngineManager scriptEngineManager = new ScriptEngineManager();
     private final static ScriptEngine jsEngine = scriptEngineManager.getEngineByExtension("js");
 
     static {
         try {
             Bindings globalScope = scriptEngineManager.getBindings();
-            InputStreamReader reader = new InputStreamReader(SpringInspector.class.getResourceAsStream("/com/github/julior/springinspector/builtin-functions.js"));
+            InputStreamReader reader = new InputStreamReader(AppIntrospector.class.getResourceAsStream("/com/github/julior/appintrospector/builtin-functions.js"));
             //globalScope.put("timer",new Timer());
             globalScope.putAll((Map<String, Object>)jsEngine.eval(reader));
             globalScope.put("_globalScope", globalScope);

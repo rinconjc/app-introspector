@@ -1,4 +1,4 @@
-// spring-console script
+// app-introspector-console script
 
 function initSpringConsole(){
     var cm;

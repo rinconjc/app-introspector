@@ -1,4 +1,4 @@
-Spring Inspector
+App Introspector
 ================
 
 A small plugable library for Spring based web applications that provides programatic access to the application at runtime. This can be used to diagnostic or fix problems at runtime. It provides a simple REST like JSON interface, as well as a rich web console for inspecting and executing scripts (JavaScript) in the JVM running the application.
@@ -33,7 +33,7 @@ This executes the script sent as a text/plain payload in the request. Only javas
 ${messageListener}.stop();
 ```
 
-* A web console can be accessed at: `/spring/console` . See [Spring Inspector Console](https://github.com/julior/spring-inspector/wiki/Spring-inspector-Console)) for more details.
+* A web console can be accessed at: `/spring/console` . See [App Introspector Console](https://github.com/julior/app-introspector/wiki/app-introspector-Console)) for more details.
 
 Additionally, the script can invoke the following built-in functions:	 
 
@@ -56,13 +56,13 @@ getField(${messageListener}, 'retryCount')
 ```
 
 
-Adding Spring Inspector to your application
+Adding App Introspector to your application
 --------------------------
-1. Add the following dependency to your maven pom.xml (if not using maven, include the [jar file](https://oss.sonatype.org/content/repositories/snapshots/com/github/julior/spring-inspector) directly in your project classpath)
+1. Add the following dependency to your maven pom.xml (if not using maven, include the [jar file](https://oss.sonatype.org/content/repositories/snapshots/com/github/julior/app-introspector) directly in your project classpath)
 ```xml
 <dependency>
   <groupId>com.github.julior</groupId>
-  <artifactId>spring-inspector</artifactId>
+  <artifactId>app-introspector</artifactId>
   <version>1.3-SNAPSHOT</version>
 </dependency>	
 ```
@@ -70,7 +70,7 @@ The snapshot repository is at https://oss.sonatype.org/content/repositories/snap
 
 2. Enable component scan in your Spring application context (or declare the controller explicitly)
 ```xml
-<context:component-scan base-package="com.github.julior.springinspector" use-default-filters="false" >
+<context:component-scan base-package="com.github.julior.appintrospector" use-default-filters="false" >
 	<context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
 	<context:include-filter type="annotation" expression="org.springframework.stereotype.Component"/>
 </context:component-scan>

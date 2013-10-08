@@ -1,4 +1,4 @@
-package com.github.julior.springinspector;
+package com.github.julior.appintrospector;
 
 import com.firebase.security.token.TokenGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -34,27 +34,27 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 /**
- * Controller for SpringInspector
+ * Controller for appintrospector
  */
 @Controller
 @RequestMapping("/spring/*")
-public class SpringInspector{
-    private final static org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(SpringInspector.class);
+public class AppIntrospector{
+    private final static org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(AppIntrospector.class);
     private final static HttpHeaders JSON_HEADERS = new HttpHeaders(){{this.setContentType(MediaType.APPLICATION_JSON);}};
     private static final String RES_PREFIX = "/spring/resource/";
 
     private ObjectMapper jsonMapper;
 
     @Autowired
-    private SpringRuntime springRuntime;
+    private AppRuntime springRuntime;
 
-    @Value("${spring-console.firebase-secret:}")
+    @Value("${app-introspector-console.firebase-secret:}")
     private String fireBaseSecret;
 
-    @Value("${spring-console.firebase-path:}")
+    @Value("${app-introspector-console.firebase-path:}")
     private String fireBaseRef;
 
-    @Value("${spring-console.appname:}")
+    @Value("${app-introspector-console.appname:}")
     private String appName;
 
     @PostConstruct
@@ -113,7 +113,7 @@ public class SpringInspector{
     @RequestMapping(value = "/console")
     public void showConsole(HttpServletRequest request, HttpServletResponse response){
         try {
-            InputStream resourceAsStream = getClass().getResourceAsStream("/spring-console.html");
+            InputStream resourceAsStream = getClass().getResourceAsStream("/app-introspector-console.html");
             transfer(resourceAsStream, response.getOutputStream());
             response.flushBuffer();
         } catch (IOException e) {

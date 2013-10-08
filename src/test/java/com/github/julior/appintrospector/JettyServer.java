@@ -1,4 +1,4 @@
-package com.github.julior.springinspector;
+package com.github.julior.appintrospector;
 
 /**
  *
@@ -47,7 +47,7 @@ public class JettyServer {
     private ServletContextHandler getServletHandler() {
         ServletHolder mvcServletHolder = new ServletHolder(MVC_SERVLET_NAME, new DispatcherServlet());
         mvcServletHolder.setInitParameter("contextClass",  "org.springframework.web.context.support.AnnotationConfigWebApplicationContext");//"classpath:/web-context.xml");
-        mvcServletHolder.setInitParameter("contextConfigLocation", "com.github.julior.springinspector.TestWebContext");
+        mvcServletHolder.setInitParameter("contextConfigLocation", "com.github.julior.appintrospector.TestWebContext");
         // session has to be set, otherwise Jasper won't work
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setAttribute("javax.servlet.context.tempdir", new File("../tmp/webapp"));
