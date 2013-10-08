@@ -1,7 +1,7 @@
 App Introspector
 ================
 
-A small plugable library for Spring based web applications that provides programatic access to the application at runtime. This can be used to diagnostic or fix problems at runtime. It provides a simple REST like JSON interface, as well as a rich web console for inspecting and executing scripts (JavaScript) in the JVM running the application.
+A small plugable library for Spring based web apps that provides programatic access to the application at runtime. This can be used for investigating or fixing problems during application runtime. It provides a simple REST like JSON interface, as well as a rich web console for inspecting and executing scripts (JavaScript) in the JVM running the application.
 
 
 JSON Interface endpoints:
@@ -53,33 +53,43 @@ exec("free -m");
 ```javascript
 //check a private field
 getField(${messageListener}, 'retryCount')
+* `dbquery(<dataSource>, <sql>)` : Executes a database query.
+* `dbupdate(<dataSource>, <sql>)` : Executes a database update.
 ```
 
 
-Adding App Introspector to your application
+Adding App Introspector to your Spring application
 --------------------------
+1. Prerequisites:
+	+ Spring 3.2 (for older versions checkout branch spring-3.0)
+	+ PropertyPlaceholder configuration (or declare the controller and components explicitly in 3) e.g.
+```
+<context:property-placeholder location="classpath:/application.properties" />
+```
 1. Add the following dependency to your maven pom.xml (if not using maven, include the [jar file](https://oss.sonatype.org/content/repositories/snapshots/com/github/julior/app-introspector) directly in your project classpath)
 ```xml
 <dependency>
   <groupId>com.github.julior</groupId>
   <artifactId>app-introspector</artifactId>
-  <version>1.3-SNAPSHOT</version>
+  <version>1.3.1-SNAPSHOT</version>
 </dependency>	
 ```
 The snapshot repository is at https://oss.sonatype.org/content/repositories/snapshots
 
-2. Enable component scan in your Spring application context (or declare the controller explicitly)
+1. Enable component scan in your Spring application context (or declare the controller explicitly)
 ```xml
-<context:component-scan base-package="com.github.julior.appintrospector" use-default-filters="false" >
-	<context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
-	<context:include-filter type="annotation" expression="org.springframework.stereotype.Component"/>
-</context:component-scan>
+<context:component-scan base-package="com.github.julior.appintrospector" />
 ```
-if no PropertyPlaceholderConfiguration is defined in your Spring context, the above may fail, if so declare the component explicitly instead (also remove the include Componet filter from above).
+if no PropertyPlaceholderConfiguration is defined in your Spring context, the above will fail, if so declare the components explicitly instead.
 ```xml
-<bean id="springruntime" class="com.github.julior.springinspector.SpringRuntime">
+<bean id="appruntime" class="com.github.julior.appintrospector.AppRuntime">
 	<property name="beanWhitelist" value="<empty or comma separated list of bean names to include>"/>
 	<property name="beanBlacklist" value="<empty or comma separated list of bean names to exclude>"/>
+</bean>
+<bean id="appIntrospector" class="com.github.julior.appintrospector.AppIntrospector">
+	<property name="fireBaseRef" value="<empty or your Firebase URL>"/>
+	<property name="fireBaseSecret" value="<empty or your Firebase auth secret>"/>
+	<property name="appName" value="<your app name>"/>
 </bean>
 ```
 
@@ -91,6 +101,29 @@ if no PropertyPlaceholderConfiguration is defined in your Spring context, the ab
 </security:http>
 ```
 
+Configuration Properties
+-----------------------------------------
+The following properties can be specified as part of the PropertyPlaceholderConfiguration
+* <b>app.introspector.beanblacklist</b> list of beans to exclude from introspection (comma separated regular expressions)
+* <b>app.introspector.beanwhitelist</b> list of beans to include in introspection (comma separated regular expressions)
+* <b>app-introspector-console.firebase-path</b> (Optional) Firebase URL for storing scripts in the App Console, if not provided it will store scripts in the browser Local Storage.
+* <b>app-introspector-console.firebase-secret</b> The authentication secret for the Firebase URL.
+* <b>app-introspector-console.appname</b> The application name for displaying in the App Console.
+
+e.g.
+
+```
+# Application properties
+# exclude beans from introspection
+app.introspector.beanblacklist=org\\.springframework\\..*
+# console properties
+# firebase path for storing scripts
+#app-introspector-console.firebase-path=https://<your-own-firebase>.firebaseio.com/
+# firebase secret
+#app-introspector-console.firebase-secret=<your firebase secret key>
+# application name
+app-introspector-console.appname=Test App
+```
 
 
 
