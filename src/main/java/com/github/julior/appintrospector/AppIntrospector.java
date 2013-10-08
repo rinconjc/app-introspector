@@ -1,8 +1,12 @@
-package com.github.julior.springinspector;
+package com.github.julior.appintrospector;
 
+import com.firebase.security.token.TokenGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -21,29 +25,37 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Date;
+import java.util.HashMap;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 /**
- * Created by IntelliJ IDEA.
- * User: rinconj
- * Date: 9/12/11
- * Time: 3:13 PM
- * To change this template use File | Settings | File Templates.
+ * Controller for appintrospector
  */
 @Controller
 @RequestMapping("/spring/*")
-public class SpringInspector{
-    private final static org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(SpringInspector.class);
+public class AppIntrospector{
+    private final static org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(AppIntrospector.class);
     private final static HttpHeaders JSON_HEADERS = new HttpHeaders(){{this.setContentType(MediaType.APPLICATION_JSON);}};
     private static final String RES_PREFIX = "/spring/resource/";
 
     private ObjectMapper jsonMapper;
 
     @Autowired
-    private SpringRuntime springRuntime;
+    private AppRuntime springRuntime;
+
+    @Value("${app-introspector-console.firebase-secret:}")
+    private String fireBaseSecret;
+
+    @Value("${app-introspector-console.firebase-path:}")
+    private String fireBaseRef;
+
+    @Value("${app-introspector-console.appname:}")
+    private String appName;
 
     @PostConstruct
     public void postConstruct(){
@@ -101,7 +113,7 @@ public class SpringInspector{
     @RequestMapping(value = "/console")
     public void showConsole(HttpServletRequest request, HttpServletResponse response){
         try {
-            InputStream resourceAsStream = getClass().getResourceAsStream("/spring-console.html");
+            InputStream resourceAsStream = getClass().getResourceAsStream("/app-introspector-console.html");
             transfer(resourceAsStream, response.getOutputStream());
             response.flushBuffer();
         } catch (IOException e) {
@@ -138,6 +150,30 @@ public class SpringInspector{
         }
     }
 
+    @RequestMapping(value = "/firebase", method = GET)
+    public void getFirebaseDetails(HttpServletResponse response, HttpServletRequest request) throws JSONException {
+        HashMap<String, String> values = new HashMap<String, String>();
+        if(fireBaseRef!=null && fireBaseRef.trim().length()>0){
+            values.put("firebaseUrl", fireBaseRef);
+            String user = request.getRemoteUser()==null?"unknown":request.getRemoteUser();
+            LOGGER.debug("authenticating for remote user " + user);
+            values.put("firebaseJwt", new TokenGenerator(fireBaseSecret).createToken(new JSONObject().put("user", user)));
+        }
+        writeJson(values, response);
+    }
+
+    @RequestMapping(value = "/serverinfo", method = GET)
+    public void getServerInfo(HttpServletResponse response){
+        HashMap<String, String> attrs = new HashMap<String, String>();
+        attrs.put("appName", appName);
+        try {
+            attrs.put("hostname", InetAddress.getLocalHost().getHostName());
+        } catch (UnknownHostException e) {
+            LOGGER.warn("Failed determining local host name", e);
+        }
+        writeJson(attrs, response);
+    }
+
     private void transfer(InputStream in, OutputStream out) throws IOException {
         byte[] buffer = new byte[1024];
         int len = 0;
@@ -172,6 +208,29 @@ public class SpringInspector{
         }
     }
 
+    public String getFireBaseSecret() {
+        return fireBaseSecret;
+    }
+
+    public void setFireBaseSecret(String fireBaseSecret) {
+        this.fireBaseSecret = fireBaseSecret;
+    }
+
+    public String getFireBaseRef() {
+        return fireBaseRef;
+    }
+
+    public void setFireBaseRef(String fireBaseRef) {
+        this.fireBaseRef = fireBaseRef;
+    }
+
+    public String getAppName() {
+        return appName;
+    }
+
+    public void setAppName(String appName) {
+        this.appName = appName;
+    }
 }
 
 

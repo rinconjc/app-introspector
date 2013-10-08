@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Spring Inspector - 1.3</title>
+    <title>App Introspector - 1.3</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
@@ -11,127 +11,14 @@
     <link rel="stylesheet" href="http://cdn.jsdelivr.net/codemirror/3.14.0/codemirror.css" type="text/css" media="screen" />
     <script src="../resources/js/bootstrap.min.js"></script>
     <link href="../resources/css/bootstrap.min.css" rel="stylesheet">
+    <link href="http://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
+    <script src="../resources/js/app-introspector-console.js"></script>
     
     <script type="text/javascript">
-      function initSpringConsole(){
-	  var cm;
-	  function postScript(text){
-	      $.ajax({
-		  type:'POST',
-		  url:'/spring/run',
-		  contentType:'text/plain',
-		  data:text,
-		  success:function(data){
-		      $("#resultText").text(typeof(data) == 'string'?data:JSON.stringify(data, null, 4));
-		  }
-	      });
-	  }
-	  
-	  function showBeanInfo(beanId){
-	      $.getJSON('/spring/bean?id='+beanId + '&im=true', function(bean) {
-		  if(bean["class"]!=null){
-		      $('#beanClass').attr('title', bean["class"]);
-		      $('#beanClass').html('<em>' + beanId + '</em>: ' + bean["class"].substr(bean["class"].lastIndexOf('.')+1));
-		  }else{
-		      $('#beanClass').text(beanId)
-		      $('#beanClass').attr('title', beanId);
-		  }
-		  
-		  var fields = [];
-		  $.each(bean["properties"], function(key, val){
-		      fields.push('<li><em>' + key + '</em> = ' + val + '</li>')
-		  });
-		  
-		  $('#beanFields').html('<ul>'+ fields.join('')+'</ul>')
-		  var methods = [];
-		  $.each(bean["methods"], function(i, meth){
-		      methods.push('<li>' + meth.returnType + ' ' + meth.name + '('  + meth.paramTypes.join(', ')+ ')');
-		  });
-		  $('#beanMethods').html('<ul>' + methods.join('') + '</ul>')
-		  $('#infoBoxTable').show();
-	      });
-	  }
-	  
-	  function refreshRepo(stored){
-	      if(stored==null)  return;
-	      $('#savedScripts option:gt(0)').remove();
-	      var $ss = $('#savedScripts');
-	      $.each(stored, function(name, value){
-		  $ss.append($('<option></option>').attr('value', name).text(name))
-	      });
-	  }
-	  
-	  function loadScript(scriptId){
-	      var stored = JSON.parse(localStorage.getItem('STORED_SCRIPTS'));
-	      //$('#scriptArea').val(stored[scriptId]);
-	      cm.setValue(stored[scriptId]);
-	  }
-	  
-	  function saveScript(){
-	      var aText = cm.getValue(); //$("#scriptArea").val();
-	      if(aText.trim().length>0){
-		  var $sn = $('#scriptName');
-		  var sn = $sn.val();
-		  if(sn.trim().length<=0){
-		      $sn.parent().addClass('has-error');
-		      return;
-		  }
-		  $sn.parent().removeClass('has-error');
-		  var stored = JSON.parse(localStorage.getItem('STORED_SCRIPTS'));
-		  if(stored==null) stored = {};
-		  stored[sn]=aText;
-		  localStorage.setItem('STORED_SCRIPTS', JSON.stringify(stored));
-		  refreshRepo(stored);
-		  $sn.val("");
-	      }
-	  }
-	  
-	  //initialise
-	  $('#content').height($(window).height());
-	  cm = CodeMirror.fromTextArea($('#scriptArea').get(0), {viewportMargin:Infinity});
-	  cm.setSize('100%',170);
-	  console.log('code mirror ' + cm);
-	  //refresh
-	  refreshRepo(JSON.parse(localStorage.getItem('STORED_SCRIPTS')));
-	  var $bl = $('#beanList');
-	  $bl.empty();
-	  $.getJSON('/spring/beanNames', function(data) {
-	      beans = data;
-	      $.each(data, function(index, val) {
-		  $bl.append($('<option></option>').attr('value',val).text(val));
-	      });
-	  });
-	  
-	  $bl.click(function(event){
-	      showBeanInfo($(event.target).val());
-	  });
-	  
-	  $('#savedScripts').change(function(e){
-	      loadScript($(this).val());
-	  });
-	  $('#btnExec').click(function(){
-	      postScript(cm.getValue());//$('#scriptArea').val());
-	  });
-	  $('#btnSave').click(function(){
-	      saveScript();
-	  });
-	  $('#scriptName').keypress(function(e){
-	      if(e.which==13) saveScript();
-	  });
-	  $('#scriptArea').parent().keydown(function(e){
-	      if(event.which==13 && event.ctrlKey){
-		  postScript(cm.getValue());
-	      }
-	  });
-	  $('.scriptContainer').resizable({
-	      resize: function() {
-		  cm.setSize($(this).width(), $(this).height());
-	      }
-	  });
-      }
       
       $(document).ready(function() {
 	  initSpringConsole();
+	  $(document).title('localhost');
       });
       
     </script>
@@ -143,83 +30,93 @@
       }
     </style>
   </head>
-  <body>
-    <div id="content" class="container">
-      <div class="navbar text-center">
-	<h4>Spring Console</h4>
+  <body style="overflow-x:hidden;">
+    
+    <div class="navbar navbar-inverse" role="navigation">
+      <div class="navbar-header">
+	<a class="navbar-brand" href="#">Spring Console</a>
       </div>
-      <div class="row">
-	<div class="col-lg-3">
-	  <div id="beansPanel" class="panel">
-	    <div class="panel-heading">Available Objects</div>
-	    <select id="beanList" size="12" class="form-control" multiple>
-	      <option>Bean 1</option>
-	    </select>
+      <div class="navbar-collapse">
+	<p id="appLabel" class="navbar-text pull-left">My App Name</p>
+	<ul class="nav navbar-nav pull-right">
+	  <li><a href="https://github.com/julior/app-introspector">About</a></li>
+	</ul>
+      </div>
+    </div>
+    <div class="row" style="margin-left:-5px;margin-right:-5px;">
+      <div class="col-lg-3">
+	<div id="beansPanel" class="panel">
+	  <div class="panel-heading">Available Objects</div>
+	  <select id="beanList" size="12" class="form-control" multiple="yes">
+	    <option>Bean 1</option>
+	    <option>Bean 2</option>
+	    <option>Bean 3</option>
+	  </select>
+	</div>
+	<div class="panel" id="infoPanel">
+	  <div class="panel-heading">
+	    Object Info
 	  </div>
-	  <div class="panel" id="infoPanel">
-	    <div class="panel-heading">
-	      Object Info
+	  <h4>myObject: someClass</h4>
+	  <h5>Fields</h5>
+	  <small>
+	    <ul class="list-group small-ul">
+	      <li class="list-group-item"><em>Field 1</em> = Some value </li>
+	      <li class="list-group-item">Field 2</li>
+	    </ul>
+	  </small>
+	  <h5>Methods</h5>
+	  <small>
+	    <ul class="list-group small-ul">
+	      <li class="list-group-item">SomeClass <em>getAnInstanceOfSomeClass</em>(String,Integer)</li>
+	      <li class="list-group-item">Method 2: return</li>
+	    </ul>
+	  </small>
+	</div>
+      </div>
+      <div class="col-lg-9" >
+	<div class="panel">
+	  <div class="panel-heading">
+	    <div class="row">
+	      <div class="col-6" style="line-height:30px;">
+		Script Input
+	      </div>
+	      <div class="col-6">
+		<div class="col-lg-9">
+		  <select id="savedScripts" class="form-control" placeholder="---Saved Scripts ---" style="height:30px;line-height:30px;margin:0px;padding-top:0px;padding-bottom:0px;">
+		    <option>---Saved Scripts---</option>
+		  </select>
+		</div>
+	      </div>
 	    </div>
-	    <h4>myObject: someClass</h4>
-	    <h5>Fields</h5>
-	    <small>
-	      <ul class="list-group small-ul">
-		<li class="list-group-item"><em>Field 1</em> = Some value </li>
-		<li class="list-group-item">Field 2</li>
-	      </ul>
-	    </small>
-	    <h5>Methods</h5>
-	    <small>
-	      <ul class="list-group small-ul">
-		<li class="list-group-item">SomeClass <em>getAnInstanceOfSomeClass</em>(String,Integer)</li>
-		<li class="list-group-item">Method 2: return</li>
-	      </ul>
-	    </small>
+	  </div>
+	  <div class="scriptContainer">
+	    <textarea id="scriptArea" class="form-control" rows="8" placeholder="Type your javascript script here. You can reference any spring bean by surrounding it's id with ${} e.g. ${mybean}.getSomething();"></textarea>
+	  </div>
+	  <div class="panel-footer">
+	    <div class="row">
+	      <div class="col-lg-1 col-offset-7">
+		<button type="button" id="btnExec" class="btn btn-default btn-small">Execute</button>
+	      </div>
+	      <div class="input-group col-lg-4">
+		<span class="input-group-btn">
+		  <button type="button" id="btnSave" class="btn btn-default btn-small">Save As</button>
+		</span>
+		<input type="text" id="scriptName" class="form-control " value="" placeholder="script name" style="height:30px;line-height:30px;" />
+	      </div>
+	    </div>
 	  </div>
 	</div>
-	<div class="col-lg-9">
-	  <div class="panel">
-	    <div class="panel-heading">
-	      <div class="row">
-		<div class="col-6" style="line-height:30px;">
-		  Script Input
-		</div>
-		<div class="col-6">
-		  <div class="col-lg-9">
-		    <select id="savedScripts" class="form-control" placeholder="---Saved Scripts ---" style="height:30px;line-height:30px;margin:0px;padding-top:0px;padding-bottom:0px;">
-		      <option>---Saved Scripts---</option>
-		    </select>
-		  </div>
-		</div>
-	      </div>
-	    </div>
-	    <div class="scriptContainer">
-	      <textarea id="scriptArea" class="form-control" rows="8" placeholder="Type your javascript script here. You can reference any spring bean by surrounding it's id with ${} e.g. ${mybean}.getSomething();"></textarea>
-	    </div>
-	    <div class="panel-footer">
-	      <div class="row">
-		<div class="col-lg-1 col-offset-7">
-		  <button type="button" id="btnExec" class="btn btn-default btn-small">Execute</button>
-		</div>
-		<div class="input-group col-lg-4">
-		  <span class="input-group-btn">
-		    <button type="button" id="btnSave" class="btn btn-default btn-small">Save As</button>
-		  </span>
-		  <input type="text" id="scriptName" class="form-control " value="" placeholder="script name" style="height:30px;line-height:30px;" />
-		</div>
-	      </div>
-	    </div>
+	<div class="panel">
+	  <div class="panel-heading">
+	    Output <i class="icon-refresh icon-spin"></i><small style="float:right" class="text-info">completed in 10 msecs at 10:12:23.112</small>
 	  </div>
-	  <div class="panel">
-	    <div class="panel-heading">
-	      Script Output
-	    </div>
-	    <textarea name="resultText" id="resultText" rows="8" class="form-control" readonly ></textarea>
-	    
-	  </div>
+	  <textarea name="resultText" id="resultText" rows="8" class="form-control" readonly ></textarea>
+	  
 	</div>
       </div>
     </div>
+    
     
   </body>
 </html>

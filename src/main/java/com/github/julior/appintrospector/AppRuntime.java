@@ -1,9 +1,7 @@
-package com.github.julior.springinspector;
+package com.github.julior.appintrospector;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.PropertyValue;
 import org.springframework.beans.factory.BeanFactory;
@@ -13,16 +11,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import javax.servlet.http.HttpServletResponse;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -32,15 +26,15 @@ import java.util.*;
  * Date: 4/30/13 11:57 AM
  */
 @Component
-public class SpringRuntime implements BeanFactoryAware {
-    private final static org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(SpringInspector.class);
+public class AppRuntime implements BeanFactoryAware {
+    private final static org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(AppIntrospector.class);
     private final static ScriptEngineManager scriptEngineManager = new ScriptEngineManager();
     private final static ScriptEngine jsEngine = scriptEngineManager.getEngineByExtension("js");
 
     static {
         try {
             Bindings globalScope = scriptEngineManager.getBindings();
-            InputStreamReader reader = new InputStreamReader(SpringInspector.class.getResourceAsStream("/com/github/julior/springinspector/builtin-functions.js"));
+            InputStreamReader reader = new InputStreamReader(AppIntrospector.class.getResourceAsStream("/com/github/julior/appintrospector/builtin-functions.js"));
             //globalScope.put("timer",new Timer());
             globalScope.putAll((Map<String, Object>)jsEngine.eval(reader));
             globalScope.put("_globalScope", globalScope);
@@ -98,12 +92,14 @@ public class SpringRuntime implements BeanFactoryAware {
         }
         Collections.sort(beanNames);
         //apply blacklist/whitelist filtering
-        return Collections2.filter(beanNames, new Predicate<String>() {
+        Collection<String> filteredBeans = Collections2.filter(beanNames, new Predicate<String>() {
             @Override
             public boolean apply(String input) {
                 return isBeanAllowed(input);
             }
         });
+        //LOGGER.debug("bean names:" + Arrays.deepToString(filteredBeans.toArray()));
+        return filteredBeans;
     }
 
     Boolean isBeanAllowed(String name) {

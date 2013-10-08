@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>App Introspector - 1.3</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="/spring/resource/js/codemirror_js"></script>
+    <script type="text/javascript" src="/spring/resource/js/javascript_js"></script>
+    <script type='text/javascript' src='https://cdn.firebase.com/v0/firebase.js'></script>
+    <link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+    <link rel="stylesheet" href="/spring/resource/css/codemirror_css" type="text/css" media="screen" />
+    <script src="/spring/resource/js/bootstrap.min_js"></script>
+    <link href="/spring/resource/css/bootstrap.min_css" rel="stylesheet">
+    <link href="http://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
+    
+    <script src="/spring/resource/js/app-introspector-console_js"></script>
+    
+    <script type="text/javascript">
+      $(document).ready(function() {
+	  initSpringConsole();
+      });
+      
+    </script>
+    <style type="text/css" media="screen">
+      .small-ul {x-overflow:hidden}
+      .small-ul li {padding:4px;}
+      .CodeMirror {
+	  border:1px solid #eee;
+      }
+      .panel-heading{font-weight:bold;}
+    </style>
+  </head>
+  <body style="overflow-x:hidden;">
+    <div class="navbar navbar-inverse" role="navigation">
+      <div class="navbar-header">
+	<a class="navbar-brand" href="#">App Console</a>
+      </div>
+      <div class="navbar-collapse">
+	<p id="appLabel" class="navbar-text pull-left">My App Name</p>
+	<ul class="nav navbar-nav pull-right">
+	  <li><a href="https://github.com/julior/app-introspector">About</a></li>
+	</ul>
+      </div>
+    </div>
+    <div class="row" style="margin-left:-5px;margin-right:-5px;">
+      <div class="col-lg-3">
+	<div id="beansPanel" class="panel">
+	  <div class="panel-heading">Available Objects</div>
+	  <select id="beanList" size="12" class="form-control" multiple>
+	    <option>Bean 1</option>
+	  </select>
+	</div>
+	<div class="panel" id="infoPanel" style="height:330px;overflow: auto;">
+	  <div class="panel-heading">
+	    Object Info
+	  </div>
+	  <h4 id="beanClass"></h4>
+	  <h5>Fields:</h5>
+	  <small>
+	    <ul id="beanFields" class="list-group small-ul">
+	      <li class="list-group-item">Field 1</li>
+	    </ul>
+	  </small>
+	  <h5>Methods:</h5>
+	  <small>
+	    <ul id="beanMethods" class="list-group small-ul">
+	      <li class="list-group-item">Method 2: return</li>
+	    </ul>
+	  </small>
+	</div>
+      </div>
+      <div class="col-lg-9">
+	<div class="panel">
+	  <div class="panel-heading">
+	    <div class="row">
+	      <div class="col-3" style="line-height:30px;">
+		Script
+	      </div>
+	      <div class="col-lg-4">
+		<button type="button" id="btnExec" class="btn btn-default btn-small" title="Ctrl+Enter">Execute</button>
+		<button type="button" id="btnSave" class="btn btn-small" title="Ctrl+b">Save</button>
+		<button type="button" id="btnClear" class="btn btn-small" title="Ctrl+i">Clear</button>
+		<small id="toast" class="text-success text-small"></small>
+              </div>
+	      <div class="col-5">
+		<div class="col-lg-9 pull-right">
+		  <select id="savedScripts" class="form-control" placeholder="---Saved Scripts ---" style="height:30px;line-height:30px;margin:0px;padding-top:0px;padding-bottom:0px;">
+		    <option value="">---Saved Scripts---</option>
+		  </select>
+		</div>
+	      </div>
+	    </div>
+	  </div>
+	  <div id="scriptContainer">
+	    <textarea id="scriptArea" class="form-control" rows="8" placeholder="Type your javascript script here. You can reference any spring bean by surrounding it's id with ${} e.g. ${mybean}.getSomething();"></textarea>
+	  </div>
+	</div>
+	<div class="panel">
+	  <div class="panel-heading">
+	    Output <i id="spinner" class="icon-refresh icon-spin" style="display:none"></i>
+	    <small id="exec-info" style="float:right" class="text-info"></small>
+	  </div>
+	  <textarea name="resultText" id="resultText" wrap="off" rows="12" class="form-control" readonly ></textarea>
+	  
+	</div>
+      </div>
+    </div>
+    <!-- Modal -->
+    <div class="modal fade" id="saveAsDialog" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog">
+	<div class="modal-content">
+          <div class="modal-body">
+	    <input id="scriptName" class="form-control" placeholder="Script name." size="20" />
+          </div>
+	</div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+    
+  </body>
+</html>

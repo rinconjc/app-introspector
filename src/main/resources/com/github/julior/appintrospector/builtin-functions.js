@@ -118,7 +118,7 @@ function toRunnable(fun){
 }
 
 function toTimerTask(fun){
-    return new com.github.julior.springinspector.RunnableTimerTask(toRunnable(fun));
+    return new com.github.julior.appintrospector.RunnableTimerTask(toRunnable(fun));
 }
 
 /*
