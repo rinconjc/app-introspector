@@ -47,10 +47,10 @@ public class AppRuntime implements BeanFactoryAware {
 
     private DefaultListableBeanFactory beanFactory;
 
-    @Value("${spring.inspector.beanwhitelist:}")
+    @Value("${app.introspector.beanwhitelist:}")
     private String[] beanWhitelist;
 
-    @Value("${spring.inspector.beanblacklist:}")
+    @Value("${app.introspector.beanblacklist:}")
     private String[] beanBlacklist;
 
     @Override
