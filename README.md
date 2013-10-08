@@ -53,9 +53,12 @@ exec("free -m");
 ```javascript
 //check a private field
 getField(${messageListener}, 'retryCount')
-* `dbquery(<dataSource>, <sql>)` : Executes a database query.
-* `dbupdate(<dataSource>, <sql>)` : Executes a database update.
 ```
+
+ * `dbquery(<dataSource>, <sql>)` : Executes a database query.
+
+ * `dbupdate(<dataSource>, <sql>)` : Executes a database update.
+
 
 
 Adding App Introspector to your Spring application
