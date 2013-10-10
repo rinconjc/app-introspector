@@ -27,8 +27,8 @@
     <scm>
         <url>git@github.com:julior/app-introspector.git</url>
         <!--https://julior@github.com/julior/app-introspector.git-->
-        <connection>scm:git:https://julior@github.com/julior/app-introspector.git</connection>
-        <developerConnection>scm:git:https://julior@github.com/julior/app-introspector.git</developerConnection>
+        <connection>scm:git:git@github.com:julior/app-introspector.git</connection>
+        <developerConnection>scm:git:git@github.com:julior/app-introspector.git</developerConnection>
     </scm>
     <developers>
         <developer>
