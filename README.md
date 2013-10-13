@@ -74,7 +74,7 @@ Adding App Introspector to your Spring application
 <dependency>
   <groupId>com.github.julior</groupId>
   <artifactId>app-introspector</artifactId>
-  <version>1.3.1-SNAPSHOT</version>
+  <version>1.3.1</version>
 </dependency>	
 ```
 The snapshot repository is at https://oss.sonatype.org/content/repositories/snapshots
