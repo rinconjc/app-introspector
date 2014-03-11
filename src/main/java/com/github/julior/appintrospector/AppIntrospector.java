@@ -1,10 +1,8 @@
 package com.github.julior.appintrospector;
 
-import com.firebase.security.token.TokenGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.json.JSONException;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -30,8 +28,7 @@ import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.HashMap;
 
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import static org.springframework.web.bind.annotation.RequestMethod.*;
 
 /**
  * Controller for appintrospector
@@ -48,11 +45,8 @@ public class AppIntrospector{
     @Autowired
     private AppRuntime springRuntime;
 
-    @Value("${app-introspector-console.firebase-secret:}")
-    private String fireBaseSecret;
-
-    @Value("${app-introspector-console.firebase-path:}")
-    private String fireBaseRef;
+    @Autowired
+    private FirebaseService firebaseService;
 
     @Value("${app-introspector-console.appname:}")
     private String appName;
@@ -87,7 +81,6 @@ public class AppIntrospector{
 
     @RequestMapping(value = "/run", method = POST, params = "src=xml")
     public void execScript(HttpServletRequest request, HttpServletResponse response, Reader reader){
-
         try {
             ScriptCommand scriptCommand = ScriptCommand.fromXml(reader);
             LOGGER.info("script run request from " + request.getRemoteHost() + " by " + request.getRemoteUser() + " cmd: " + scriptCommand);
@@ -122,6 +115,22 @@ public class AppIntrospector{
         }
     }
 
+    @RequestMapping(value = "/binding", method = POST)
+    public void addBinding(HttpServletRequest request, HttpServletResponse response, @RequestParam String name, @RequestParam String script){
+        try {
+            boolean result = springRuntime.addBinding(name, springRuntime.evalCommand(ScriptCommand.fromScript(script), false), true);
+            writeJson(result, response);
+        } catch (Exception e) {
+            LOGGER.error("failed adding/updating js binding for " + name, e);
+            response.setStatus(500);
+        }
+    }
+
+    @RequestMapping(value = "/binding", method = DELETE)
+    public void removeBinding(HttpServletRequest request, HttpServletResponse response, @RequestParam String name){
+        writeJson(springRuntime.deleteBinding(name), response);
+    }
+
     @RequestMapping(value = "/resource/**")
     public void getStaticResource(HttpServletRequest request, HttpServletResponse response){
         String servletPath = request.getServletPath();
@@ -152,14 +161,8 @@ public class AppIntrospector{
 
     @RequestMapping(value = "/firebase", method = GET)
     public void getFirebaseDetails(HttpServletResponse response, HttpServletRequest request) throws JSONException {
-        HashMap<String, String> values = new HashMap<String, String>();
-        if(fireBaseRef!=null && fireBaseRef.trim().length()>0){
-            values.put("firebaseUrl", fireBaseRef);
-            String user = request.getRemoteUser()==null?"unknown":request.getRemoteUser();
-            LOGGER.debug("authenticating for remote user " + user);
-            values.put("firebaseJwt", new TokenGenerator(fireBaseSecret).createToken(new JSONObject().put("user", user)));
-        }
-        writeJson(values, response);
+        String user = request.getRemoteUser()==null?"unknown":request.getRemoteUser();
+        writeJson(firebaseService.getAuthToken(user), response);
     }
 
     @RequestMapping(value = "/serverinfo", method = GET)
@@ -184,7 +187,7 @@ public class AppIntrospector{
 
     private void executeCommand(ScriptCommand command, HttpServletResponse response) throws Exception{
         try {
-            writeJson(springRuntime.evalCommand(command), response);
+            writeJson(springRuntime.evalCommand(command, true), response);
         } catch (ScriptException e) {
             LOGGER.error("Failed executing script:" + command ,e );
             throw new Exception(e);
@@ -206,22 +209,6 @@ public class AppIntrospector{
             response.setHeader("Cache-Control","no-cache");
             LOGGER.error("Failed serialising object " +t, e);
         }
-    }
-
-    public String getFireBaseSecret() {
-        return fireBaseSecret;
-    }
-
-    public void setFireBaseSecret(String fireBaseSecret) {
-        this.fireBaseSecret = fireBaseSecret;
-    }
-
-    public String getFireBaseRef() {
-        return fireBaseRef;
-    }
-
-    public void setFireBaseRef(String fireBaseRef) {
-        this.fireBaseRef = fireBaseRef;
     }
 
     public String getAppName() {

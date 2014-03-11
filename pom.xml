@@ -9,7 +9,7 @@
 
     <groupId>com.github.julior</groupId>
     <artifactId>app-introspector_3.0</artifactId>
-    <version>1.3.1-SNAPSHOT</version>
+    <version>1.3.2-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>App Introspector</name>
     <description>

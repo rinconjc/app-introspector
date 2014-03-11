@@ -30,6 +30,7 @@ public class AppRuntime implements BeanFactoryAware {
     private final static org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(AppIntrospector.class);
     private final static ScriptEngineManager scriptEngineManager = new ScriptEngineManager();
     private final static ScriptEngine jsEngine = scriptEngineManager.getEngineByExtension("js");
+    private final static String JAVA_WRAP = "toJava(_result);";
 
     static {
         try {
@@ -39,11 +40,11 @@ public class AppRuntime implements BeanFactoryAware {
             globalScope.putAll((Map<String, Object>)jsEngine.eval(reader));
             globalScope.put("_globalScope", globalScope);
             scriptEngineManager.setBindings(globalScope);
+            //load bindings from persistent storage
         } catch (Exception e) {
             LOGGER.error("Failed registering built-in functions", e);
         }
     }
-
 
     private DefaultListableBeanFactory beanFactory;
 
@@ -63,19 +64,56 @@ public class AppRuntime implements BeanFactoryAware {
     }
 
     public <T> T evalCommand(ScriptCommand command) throws Exception{
+        return evalCommand(command, false);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> T evalCommand(ScriptCommand command, boolean resultAsJava) throws Exception{
         Bindings bindings = jsEngine.createBindings();
         for (Map.Entry<String, String> entry : command.getArguments().entrySet()) {
             if(!isBeanAllowed(entry.getValue()))
                 throw new Exception("Bean '" + entry.getValue() +"' is not allowed.");
             bindings.put(entry.getKey(), beanFactory.getBean(entry.getValue()));
         }
-
         try {
-            return (T) jsEngine.eval(command.getScript(), bindings);
+            Object result = jsEngine.eval(command.getScript(), bindings);
+            if(result!=null && resultAsJava){
+                Bindings binding = jsEngine.createBindings();
+                binding.put("_result", result);
+                result = jsEngine.eval(JAVA_WRAP, binding);
+            }
+            return (T) result;
         } catch (ScriptException e) {
             LOGGER.error("Failed executing script:" + command ,e );
             throw new Exception(e);
         }
+    }
+
+    /**
+     * Adds a new binding to the script engine. E.g. add a new function.
+     * @param key
+     * @param value
+     * @param overwrite
+     * @return
+     */
+    public boolean addBinding(String key, Object value, boolean overwrite){
+        Bindings globalScope = scriptEngineManager.getBindings();
+        if(globalScope.containsKey(key) && !overwrite){
+            LOGGER.warn("a binding with the same key " + key + " already exists.");
+            return false;
+        }
+        globalScope.put(key, value);
+        return true;
+    }
+
+    /**
+     * Deletes an existing binding from the script engine.
+     * @param key
+     * @return
+     */
+    public boolean deleteBinding(String key){
+        Bindings globalScope = scriptEngineManager.getBindings();
+        return globalScope.remove(key)!=null;
     }
 
     public Collection<String> getContextBeanNames(){
