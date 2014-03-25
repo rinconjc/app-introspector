@@ -1,7 +1,7 @@
 App Introspector
 ================
 
-A small plugable library for Spring based web apps that provides programatic access to the application at runtime. This can be used for investigating or fixing problems during application runtime. It provides a simple REST like JSON interface, as well as a rich web console for inspecting and executing scripts (JavaScript) in the JVM running the application.
+A small plugable library for Spring based web apps that provides programatic access to the application at runtime. This can be used for investigating or fixing problems during application runtime. It provides a simple REST like JSON interface, as well as a [rich web console](https://github.com/julior/app-introspector/wiki/app-introspector-Console) for inspecting and executing scripts (JavaScript) in the JVM running the application.
 
 
 JSON Interface endpoints:
@@ -53,9 +53,12 @@ exec("free -m");
 ```javascript
 //check a private field
 getField(${messageListener}, 'retryCount')
-* `dbquery(<dataSource>, <sql>)` : Executes a database query.
-* `dbupdate(<dataSource>, <sql>)` : Executes a database update.
 ```
+
+ * `dbquery(<dataSource>, <sql>)` : Executes a database query.
+
+ * `dbupdate(<dataSource>, <sql>)` : Executes a database update.
+
 
 
 Adding App Introspector to your Spring application
@@ -71,7 +74,7 @@ Adding App Introspector to your Spring application
 <dependency>
   <groupId>com.github.julior</groupId>
   <artifactId>app-introspector</artifactId>
-  <version>1.3.1-SNAPSHOT</version>
+  <version>1.3.1</version>
 </dependency>	
 ```
 The snapshot repository is at https://oss.sonatype.org/content/repositories/snapshots
