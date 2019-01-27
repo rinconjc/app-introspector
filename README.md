@@ -1,4 +1,4 @@
-App Introspector
+App Introspector  -- DEPRECATED AND OBSOLETE
 ================
 
 A small plugable library for Spring based web apps that provides programatic access to the application at runtime. This can be used for investigating or fixing problems during application runtime. It provides a simple REST like JSON interface, as well as a [rich web console](https://github.com/julior/app-introspector/wiki/app-introspector-Console) for inspecting and executing scripts (JavaScript) in the JVM running the application.
